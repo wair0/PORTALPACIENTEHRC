@@ -50,7 +50,9 @@
     return {detected:detected,scriptResources:scripts.slice(0,100),stylesheetResources:styles.slice(0,100)};
   }
   function buildMap(reason) {
-    if(!document.body||!window.HRCBridge||!window.HRCBridge.saveUiMap)return;
+    if(!document.body){console.warn('[UI_MAP] No hay document.body; se omite captura');return;}
+    if(!window.HRCBridge||!window.HRCBridge.saveUiMap){console.warn('[UI_MAP] El puente Android HRCBridge no está disponible');return;}
+    console.log('[UI_MAP] Iniciando captura de interfaz; motivo='+reason);
     var path=location.pathname, routeKey=path+'|'+(document.title||'');
     var nodes=Array.from(document.body.querySelectorAll('*')).filter(visible);
     nodes.sort(function(a,b){
@@ -84,10 +86,18 @@
     }).join('|');
     if(sentRoutes[routeKey]===signature)return;
     sentRoutes[routeKey]=signature;
-    try{window.HRCBridge.saveUiMap(JSON.stringify(report));}catch(_){}
+    try{
+      var payload=JSON.stringify(report);
+      console.log('[UI_MAP] Enviando mapa; elementos='+nodes.length+', caracteres='+payload.length);
+      window.HRCBridge.saveUiMap(payload);
+      console.log('[UI_MAP] Llamada al puente Android completada');
+    }catch(error){
+      console.error('[UI_MAP] Falló el envío al puente Android: '+String(error));
+    }
   }
   function schedule(reason){if(timer)clearTimeout(timer);timer=setTimeout(function(){buildMap(reason||'DOM estable');},1800);}
   function start(){
+    console.log('[UI_MAP] Script activo en '+cleanUrl(location.href));
     schedule('carga inicial');
     var observer=new MutationObserver(function(){schedule('cambio DOM/estilo/menú SPA');});
     observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,
