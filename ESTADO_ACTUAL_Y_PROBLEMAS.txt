@@ -1,0 +1,52 @@
+PORTALPACIENTEHRC - ESTADO ACTUAL DEL TRABAJO
+Fecha: 10/10/2026
+
+REPOSITORIO
+https://github.com/wair0/PORTALPACIENTEHRC
+
+RAMA DE TRABAJO
+fix/aplicar-tema-visual-zip
+
+PULL REQUEST
+PR #1: https://github.com/wair0/PORTALPACIENTEHRC/pull/1
+Rama destino: main
+
+PROBLEMAS QUE VENIMOS INVESTIGANDO
+1. La pantalla de inicio de sesión tarda demasiado en aparecer o queda sin mostrarse correctamente al abrir la app. En las pruebas descritas, llega a aparecer después de minimizar la aplicación y restaurarla unas 2 o 3 veces.
+2. Los datos de la pantalla Inicio se van perdiendo/desapareciendo gradualmente.
+3. Se necesita observar la interfaz oficial del portal sin que los estilos o scripts personalizados interfieran, para poder identificar qué elementos HTML, CSS, JavaScript y secciones se cargan y cuándo.
+4. Los registros anteriores no se estaban encontrando en la carpeta Descargas del teléfono. Es necesario comprobar en el dispositivo que los nuevos TXT realmente se creen y se actualicen.
+
+ÚLTIMOS CAMBIOS APLICADOS EN LA RAMA
+- Se añadió app/src/main/java/com/tws/portalpaciente/app/util/DownloadsLogWriter.kt para escribir registros en la carpeta Descargas de Android.
+- Se conectó DebugLog con el escritor persistente para conservar los eventos de depuración, además del buffer temporal en memoria.
+- Se conectó PortalUiMapLogger para guardar el mapa de la interfaz en TXT.
+- Los registros se dividen en archivos numerados, con un máximo previsto de cinco partes por tipo para evitar un único TXT excesivamente grande.
+- Los nombres esperados son:
+  portal_debug_1.txt, portal_debug_2.txt, ... hasta portal_debug_5.txt
+  portal_ui_map_1.txt, portal_ui_map_2.txt, ... hasta portal_ui_map_5.txt
+- La escritura de DebugLog se realiza en segundo plano para reducir el riesgo de bloquear la interfaz.
+- La ruta prevista es la raíz de Descargas (Download), no una subcarpeta HRC-logs.
+
+ARCHIVOS PRINCIPALES MODIFICADOS
+- app/src/main/java/com/tws/portalpaciente/app/util/DownloadsLogWriter.kt
+- app/src/main/java/com/tws/portalpaciente/app/web/DebugLog.kt
+- app/src/main/java/com/tws/portalpaciente/app/MainActivity.kt
+- app/src/main/java/com/tws/portalpaciente/app/util/PortalUiMapLogger.kt
+
+ESTADO DE VERIFICACIÓN
+- Una ejecución anterior de Android CI terminó correctamente, pero corresponde a una revisión previa de estos últimos cambios.
+- No está confirmado que el commit más reciente haya completado una compilación de CI.
+- El APK actualizado todavía debe instalarse y probarse en el teléfono.
+- Falta verificar en el dispositivo que ambos tipos de TXT aparezcan en Descargas, que reciban datos útiles y que roten correctamente entre las partes numeradas.
+- También falta comprobar si los cambios mejoran los problemas de inicio de sesión tardío y desaparición progresiva de los datos de Inicio.
+
+PRÓXIMOS PASOS
+1. Confirmar que la última revisión de la rama compile.
+2. Generar e instalar el APK actualizado.
+3. Reproducir el problema abriendo la app y observando el inicio de sesión y la pantalla Inicio.
+4. Revisar los archivos portal_debug_*.txt y portal_ui_map_*.txt en Descargas.
+5. Usar esos registros para localizar la causa antes de hacer cambios adicionales.
+
+IMPORTANTE
+Los cambios de código para guardar los logs ya están en la rama, pero todavía no se debe dar por confirmado que funcionan en el teléfono hasta probar el APK actualizado en el dispositivo.
