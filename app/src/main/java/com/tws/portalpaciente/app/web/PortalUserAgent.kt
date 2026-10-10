@@ -26,7 +26,7 @@ object PortalUserAgent {
             FileLogger.log(ctx, TAG, "UA set to: $ua (major=$major)")
             applyRequestedWithAllowList(webView.settings, ctx)
             applyUserAgentMetadata(webView.settings, major, ctx)
-            injectDocumentStartScripts(ctx, webView, major)
+            injectCompatibilityScripts(ctx, webView, major)
             Log.d(TAG, "UA aplicado: $ua")
             FileLogger.log(ctx, TAG, "apply() completed successfully")
         } catch (e: Exception) {
@@ -89,10 +89,14 @@ object PortalUserAgent {
         }
     }
 
-    private fun injectDocumentStartScripts(ctx: Context, webView: WebView, major: Int) {
+    /**
+     * Conservamos solo las compatibilidades que ya usa el login. No inyectamos CSS,
+     * clasificadores visuales ni scripts de diagnóstico en document-start.
+     */
+    private fun injectCompatibilityScripts(ctx: Context, webView: WebView, major: Int) {
         try {
             if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-                FileLogger.log(ctx, TAG, "DOCUMENT_START_SCRIPT not supported; theme uses WebViewClient fallback")
+                FileLogger.log(ctx, TAG, "DOCUMENT_START_SCRIPT no soportado; se omiten scripts tempranos")
                 return
             }
             val origin = setOf(PortalRoutes.BASE)
@@ -103,32 +107,15 @@ object PortalUserAgent {
                 ""
             }
 
-            val probe = asset("js/portal-probe.js")
-            if (probe.isNotEmpty()) {
-                WebViewCompat.addDocumentStartJavaScript(webView, probe, origin)
-                FileLogger.log(ctx, TAG, "portal-probe.js injected at document-start")
-            }
             val tts = asset("js/tts-polyfill.js")
-            if (tts.isNotEmpty()) {
-                WebViewCompat.addDocumentStartJavaScript(webView, tts, origin)
-                FileLogger.log(ctx, TAG, "tts-polyfill.js injected at document-start")
-            }
+            if (tts.isNotEmpty()) WebViewCompat.addDocumentStartJavaScript(webView, tts, origin)
+
             val uaCompat = asset("js/ua-compat.js")
                 .replace("__CHROME_MAJOR__", major.toString())
                 .replace("__DIAGNOSTICS__", diagnostics.toString())
-            if (uaCompat.isNotEmpty()) {
-                WebViewCompat.addDocumentStartJavaScript(webView, uaCompat, origin)
-                FileLogger.log(ctx, TAG, "ua-compat.js injected at document-start")
-            }
-
-            // Aplicar el CSS y el enhancer antes de que el portal pinte sus estilos.
-            val theme = PortalInjector.loadScript(ctx)
-            if (theme.isNotEmpty()) {
-                WebViewCompat.addDocumentStartJavaScript(webView, theme, origin)
-                FileLogger.log(ctx, TAG, "portal-theme.css + enhancer.js injected at document-start")
-            }
+            if (uaCompat.isNotEmpty()) WebViewCompat.addDocumentStartJavaScript(webView, uaCompat, origin)
         } catch (e: Exception) {
-            FileLogger.log(ctx, TAG, "Error injecting document-start scripts: ${e.message}")
+            FileLogger.log(ctx, TAG, "Error injecting compatibility scripts: ${e.message}")
         }
     }
 }
