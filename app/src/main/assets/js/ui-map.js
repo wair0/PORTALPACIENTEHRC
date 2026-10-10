@@ -2,7 +2,7 @@
   'use strict';
   if (window.__hrcUiMapInstalled) return;
   window.__hrcUiMapInstalled = true;
-  var sentRoutes = Object.create(null), timer = 0, bridgeRetries = 0;
+  var sentRoutes = Object.create(null), timer = 0;
 
   function cleanUrl(value) {
     try { var u = new URL(value, location.href); return u.origin + u.pathname; } catch (_) { return ''; }
@@ -51,24 +51,31 @@
     return {detected:detected,scriptResources:scripts.slice(0,100),stylesheetResources:styles.slice(0,100)};
   }
 
-  function hasBridge() {
-    return !!(window.HRCBridge && typeof window.HRCBridge.saveUiMap === 'function');
+  function sendMap(payload) {
+    // Primero intentar el puente normal
+    if (window.HRCBridge && typeof window.HRCBridge.saveUiMap === 'function') {
+      try {
+        window.HRCBridge.saveUiMap(payload);
+        console.log('[UI_MAP] Enviado por puente HRCBridge');
+        return true;
+      } catch (e) {
+        console.warn('[UI_MAP] Puente falló, usando prompt: ' + e);
+      }
+    }
+    // Fallback confiable: prompt
+    try {
+      window.prompt('HRC_UI_MAP:' + payload);
+      console.log('[UI_MAP] Enviado por prompt');
+      return true;
+    } catch (e) {
+      console.error('[UI_MAP] Prompt también falló: ' + e);
+      return false;
+    }
   }
 
   function buildMap(reason) {
-    if(!document.body){console.warn('[UI_MAP] No hay document.body; se omite captura');return;}
-    if(!hasBridge()){
-      bridgeRetries++;
-      console.warn('[UI_MAP] Puente no disponible (intento '+bridgeRetries+'). Reintentando...');
-      if(bridgeRetries < 12){
-        setTimeout(function(){ buildMap(reason); }, 800);
-      } else {
-        console.error('[UI_MAP] Puente HRCBridge no disponible despues de varios reintentos');
-      }
-      return;
-    }
-    bridgeRetries = 0;
-    console.log('[UI_MAP] Iniciando captura de interfaz; motivo='+reason);
+    if(!document.body){console.warn('[UI_MAP] No hay document.body');return;}
+    console.log('[UI_MAP] Iniciando captura; motivo='+reason);
     var path=location.pathname, routeKey=path+'|'+(document.title||'');
     var nodes=Array.from(document.body.querySelectorAll('*')).filter(visible);
     nodes.sort(function(a,b){
@@ -94,28 +101,21 @@
       document:{htmlClass:short(document.documentElement.className,180),bodyClass:short(document.body.className,180),
         rootStyle:styleOf(document.documentElement),bodyStyle:styleOf(document.body),cssVariables:vars},
       frontend:frameworkHints(),visibleElementCount:nodes.length,elements:elements,
-      privacy:'No se guardaron valores de campos, texto real de etiquetas, párrafos ni contenido clínico/personal.'
+      privacy:'No se guardaron valores de campos ni texto clínico/personal.'
     };
     var signature=path+'|'+document.title+'|'+nodes.length+'|'+nodes.slice(0,180).map(function(e){
-      return e.tagName+':'+short(e.id,30)+':'+short(typeof e.className==='string'?e.className:'',60)+
-        ':'+e.getAttribute('aria-expanded')+':'+e.getAttribute('hidden');
+      return e.tagName+':'+short(e.id,30)+':'+short(typeof e.className==='string'?e.className:'',60);
     }).join('|');
     if(sentRoutes[routeKey]===signature)return;
     sentRoutes[routeKey]=signature;
-    try{
-      var payload=JSON.stringify(report);
-      console.log('[UI_MAP] Enviando mapa; elementos='+nodes.length+', caracteres='+payload.length);
-      window.HRCBridge.saveUiMap(payload);
-      console.log('[UI_MAP] Llamada al puente Android completada');
-    }catch(error){
-      console.error('[UI_MAP] Falló el envío al puente Android: '+String(error));
-    }
+    var payload=JSON.stringify(report);
+    console.log('[UI_MAP] Preparado; elementos='+nodes.length+', chars='+payload.length);
+    sendMap(payload);
   }
 
   function schedule(reason){if(timer)clearTimeout(timer);timer=setTimeout(function(){buildMap(reason||'DOM estable');},1800);}
   function start(){
     console.log('[UI_MAP] Script activo en '+cleanUrl(location.href));
-    console.log('[UI_MAP] Puente disponible al inicio: '+(hasBridge()?'SI':'NO'));
     schedule('carga inicial');
     var observer=new MutationObserver(function(){schedule('cambio DOM/estilo/menú SPA');});
     observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,
