@@ -13,6 +13,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.tws.portalpaciente.app.ui.PortalViewModel
 import com.tws.portalpaciente.app.util.FileLogger
+import com.tws.portalpaciente.app.web.DebugLog
 
 class PortalWebViewClient(
     private val context: Context,
@@ -49,11 +50,23 @@ class PortalWebViewClient(
     }
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
+        DebugLog.add("PAGE", "start $url")
         viewModel.onPageStarted()
         if (injectManually && script.isNotEmpty()) view.evaluateJavascript(script, null)
     }
 
     override fun onPageFinished(view: WebView, url: String?) {
+        DebugLog.add("PAGE", "finish $url")
+
+        // Sondeo simple a los 3s para ver si dibujó algo
+        view.postDelayed({
+            view.evaluateJavascript(
+                "(function(){try{return JSON.stringify({rs:document.readyState,title:document.title," +
+                "text:(document.body&&document.body.innerText||'').trim().length," +
+                "snippet:(document.body&&document.body.innerText||'').trim().slice(0,160)})}catch(e){return 'err '+e}})()"
+            ) { DebugLog.add("PROBE", it ?: "null") }
+        }, 3000)
+
         if (injectManually && script.isNotEmpty()) view.evaluateJavascript(script, null)
 
         val force = getForceRenderScript()
@@ -62,15 +75,12 @@ class PortalWebViewClient(
         }
 
         viewModel.onPageFinished(url)
+        // NO recargar /login si falta state. El portal es SPA y lo agrega después.
+    }
 
-        url?.let {
-            val uri = Uri.parse(it)
-            if (uri.path?.trimEnd('/') == "/login" && uri.getQueryParameter("state").isNullOrBlank()) {
-                view.postDelayed({
-                    view.loadUrl(PortalRoutes.LOGIN)
-                }, 500)
-            }
-        }
+    override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+        DebugLog.add("NAV", "history $url")
+        viewModel.onPageFinished(url)
     }
 
     override fun onReceivedError(
@@ -78,14 +88,15 @@ class PortalWebViewClient(
         request: WebResourceRequest,
         error: WebResourceError
     ) {
+        DebugLog.add("ERR", "${if (request.isForMainFrame) "MAIN " else ""}${request.url} -> ${error.errorCode} ${error.description}")
         if (request.isForMainFrame) viewModel.onError(error.description?.toString().orEmpty())
     }
 
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+        DebugLog.add("SSL", "${error.primaryError} ${error.url}")
         val host = error.url?.let { Uri.parse(it).host } ?: view.url?.let { Uri.parse(it).host }
         FileLogger.log(context, "SSL", "Error ${error.primaryError} en host=$host url=${error.url}")
 
-        // Continuar siempre si es el host del portal o si no se pudo determinar el host
         if (host == null || host == PortalRoutes.HOST || host.endsWith(".sanluis.gob.ar")) {
             handler.proceed()
         } else {
@@ -95,6 +106,7 @@ class PortalWebViewClient(
     }
 
     override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+        DebugLog.add("RENDER", "render process gone, crash=${detail.didCrash()}")
         viewModel.onError("La vista del portal se reinició. Tocá Reintentar.")
         return true
     }
