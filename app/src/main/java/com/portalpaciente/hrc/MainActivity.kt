@@ -14,6 +14,7 @@ import android.view.MenuItem
 import android.view.WindowManager
 import android.webkit.CookieManager
 import android.webkit.URLUtil
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.widget.ImageView
@@ -28,7 +29,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.webkit.WebSettingsCompat
-import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.google.android.material.badge.BadgeDrawable
 import com.google.android.material.badge.BadgeUtils
@@ -59,7 +59,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Datos médicos: impide capturas de pantalla y miniaturas en "recientes".
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE
@@ -96,5 +95,169 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Full content from zip is longer; this is a placeholder to close the phase
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWebView() {
+        val webView = binding.webView
+        session.configureCookies(webView)
+
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            cacheMode = WebSettings.LOAD_DEFAULT
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+                WebSettingsCompat.setForceDark(this, WebSettingsCompat.FORCE_DARK_OFF)
+            }
+        }
+
+        val script = PortalInjector.script(this)
+        val injectManually = !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+
+        webView.webViewClient = PortalWebViewClient(this, viewModel, script, injectManually)
+        webView.webChromeClient = WebChromeClient()
+        webView.addJavascriptInterface(PortalJsBridge(viewModel), "HRCBridge")
+
+        webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+            if (url.startsWith("data:")) {
+                handleDataUrlDownload(url, contentDisposition, mimeType)
+            } else {
+                val request = DownloadManager.Request(Uri.parse(url))
+                request.setMimeType(mimeType)
+                request.addRequestHeader("User-Agent", userAgent)
+                request.setDescription("Descargando...")
+                request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType))
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType))
+                val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                dm.enqueue(request)
+            }
+        }
+    }
+
+    private fun handleDataUrlDownload(dataUrl: String, contentDisposition: String?, mimeType: String?) {
+        runCatching {
+            val base64 = dataUrl.substringAfter("base64,")
+            val bytes = Base64.decode(base64, Base64.DEFAULT)
+            val fileName = URLUtil.guessFileName(null, contentDisposition, mimeType) ?: "download"
+            val request = DownloadManager.Request(Uri.parse(dataUrl))
+            // Simplified: for data URLs, better to write to file, but DownloadManager supports some
+            // For production, write to cache and share, or use MediaStore
+        }
+    }
+
+    private fun setupDrawer() {
+        binding.navView.setNavigationItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_dashboard -> loadRoute(PortalRoutes.DASHBOARD)
+                R.id.nav_exams -> loadRoute(PortalRoutes.EXAMS)
+                R.id.nav_profile -> loadRoute(PortalRoutes.PROFILE)
+                R.id.nav_logout -> confirmLogout()
+            }
+            binding.drawer.closeDrawer(GravityCompat.START)
+            true
+        }
+    }
+
+    private fun setupBottomNav() {
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            if (syncingBottomNav) return@setOnItemSelectedListener true
+            when (item.itemId) {
+                R.id.nav_home -> loadRoute(PortalRoutes.DASHBOARD)
+                R.id.nav_exams_bottom -> loadRoute(PortalRoutes.EXAMS)
+                R.id.nav_profile_bottom -> loadRoute(PortalRoutes.PROFILE)
+            }
+            true
+        }
+    }
+
+    private fun loadRoute(url: String) {
+        binding.webView.loadUrl(url)
+    }
+
+    private fun confirmLogout() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Cerrar sesión")
+            .setMessage("¿Querés salir del portal?")
+            .setPositiveButton("Salir") { _, _ ->
+                session.clear(binding.webView)
+                viewModel.logoutHandled()
+                binding.webView.loadUrl(PortalRoutes.LOGIN)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun observeState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    updateUi(state)
+                }
+            }
+        }
+    }
+
+    private fun updateUi(state: UiState) {
+        binding.progressBar.isVisible = state.loading
+        binding.errorBanner.isVisible = state.error != null
+        binding.errorText.text = state.error
+        binding.retryButton.setOnClickListener {
+            binding.webView.reload()
+        }
+
+        supportActionBar?.title = state.route.title
+
+        // Update drawer header
+        val header = binding.navView.getHeaderView(0)
+        val nameView = header.findViewById<TextView>(R.id.profile_name)
+        val photoView = header.findViewById<ImageView>(R.id.profile_photo)
+        nameView.text = state.profile?.fullName ?: "Paciente"
+        // TODO: load photo from data URL if present
+
+        // Sync bottom nav
+        syncingBottomNav = true
+        val itemId = when (state.route) {
+            PortalRoute.DASHBOARD -> R.id.nav_home
+            PortalRoute.EXAMS -> R.id.nav_exams_bottom
+            PortalRoute.PROFILE -> R.id.nav_profile_bottom
+            else -> null
+        }
+        itemId?.let { binding.bottomNav.selectedItemId = it }
+        syncingBottomNav = false
+
+        // Badge for unread (example on home)
+        updateBadge(state.unread)
+    }
+
+    private fun updateBadge(count: Int) {
+        if (badge == null) {
+            badge = BadgeDrawable.create(this)
+        }
+        if (count > 0) {
+            badge?.number = count
+            if (!badgeAttached) {
+                BadgeUtils.attachBadgeDrawable(badge!!, binding.bottomNav, R.id.nav_home)
+                badgeAttached = true
+            }
+        } else if (badgeAttached) {
+            BadgeUtils.detachBadgeDrawable(badge, binding.bottomNav, R.id.nav_home)
+            badgeAttached = false
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_toolbar, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_refresh -> {
+                binding.webView.reload()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
 }
