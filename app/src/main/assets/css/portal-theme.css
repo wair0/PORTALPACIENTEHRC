@@ -1,58 +1,82 @@
-/* Portal Paciente HRC – tema v5 "High-Tech Corporativo · Utopía futurista" (médico)
-   Luminoso, vidrio, marcos HUD sutiles, azul médico + acento cian. Claro/oscuro según el sistema.
-   Sin neón, sin negro dominante, sin escáner. Animaciones solo transform/opacity.
-   Tema anterior (oscuro neón): historial git. Claro v3: portal-theme-v3-claro.css */
+/* Portal Paciente HRC – tema v5 reforzado */
 :root{--bg:#F3F8FB;--bg2:#DCEEF8;--ink:#102A43;--muted:#5B7389;--blue:#0B6B9A;--navy:#073B5C;--accent:#20A4D8;--ok:#16805C;
 --glass:rgba(255,255,255,.74);--line:rgba(32,164,216,.34);--shadow:0 10px 30px rgba(7,59,92,.10);--ease:cubic-bezier(.2,.8,.2,1);color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#071A2B;--bg2:#0A2A44;--ink:#E6F1FA;--muted:#8FB0C8;--blue:#4FC3F7;--accent:#4FC3F7;--ok:#3DDC97;
 --glass:rgba(12,35,56,.72);--line:rgba(79,195,247,.30);--shadow:0 12px 34px rgba(0,0,0,.35);color-scheme:dark}}
 
-html{background:var(--bg)!important;color:var(--ink);font-family:Roboto,"Segoe UI",system-ui,sans-serif!important;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
-body{background:transparent!important;color:var(--ink);font-family:inherit!important}
-/* aurora suave + retícula técnica */
-body::before{content:"";position:fixed;inset:-20%;z-index:-2;pointer-events:none;
-background:radial-gradient(42% 34% at 15% 12%,rgba(32,164,216,.26),transparent 70%),radial-gradient(38% 36% at 90% 8%,rgba(11,107,154,.20),transparent 70%),radial-gradient(40% 34% at 70% 95%,rgba(22,128,92,.12),transparent 70%);
-animation:hrc-drift 28s ease-in-out infinite alternate;will-change:transform}
-body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
-background-image:linear-gradient(rgba(11,107,154,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(11,107,154,.06) 1px,transparent 1px);background-size:30px 30px;
--webkit-mask-image:linear-gradient(180deg,#000,rgba(0,0,0,.1) 80%);mask-image:linear-gradient(180deg,#000,rgba(0,0,0,.1) 80%)}
-/* hilo de luz superior */
-html::before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:9999;pointer-events:none;
-background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:hrc-scan 8s linear infinite}
-@keyframes hrc-drift{to{transform:translate(3%,-2%) scale(1.05)}}
-@keyframes hrc-scan{0%{opacity:0;transform:scaleX(0)}50%{opacity:1;transform:scaleX(1)}100%{opacity:0;transform:scaleX(0)}}
+html, body {
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font-family: Roboto, "Segoe UI", system-ui, sans-serif !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
 
-/* Contenedores principales */
-#root,#__next,main,[role="main"]{background:transparent!important}
+/* Ocultar headers y footers oficiales del portal de forma agresiva */
+header,
+.header,
+.navbar,
+.navbar-fixed-top,
+.site-header,
+.app-header,
+[class*="Header"],
+[class*="header"],
+[class*="Navbar"],
+[class*="TopBar"],
+[class*="AppBar"],
+footer,
+.footer,
+.site-footer,
+[class*="Footer"],
+[class*="BottomBar"],
+[class*="bottom-nav"],
+[data-hrc-hidden="1"] {
+  display: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
 
-/* Cards / paneles */
-.card,.panel,.box,[class*="Card"],[class*="card"]{
-  background:var(--glass)!important;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid var(--line)!important;border-radius:16px!important;box-shadow:var(--shadow)!important;
-  transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
-.card:hover,.panel:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(7,59,92,.14)}
+/* Contenedores */
+#root, #__next, main, [role="main"] {
+  background: transparent !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Cards */
+.card, .panel, .box, [class*="Card"], [class*="card"] {
+  background: var(--glass) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow) !important;
+}
 
 /* Botones */
-button,.btn,input[type="submit"],input[type="button"]{
-  background:linear-gradient(180deg,var(--blue),var(--navy))!important;color:#fff!important;
-  border:none!important;border-radius:10px!important;padding:10px 18px!important;
-  font-weight:600!important;box-shadow:0 4px 14px rgba(11,107,154,.25);
-  transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
-button:hover,.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(11,107,154,.35)}
+button, .btn, input[type="submit"], input[type="button"] {
+  background: linear-gradient(180deg, var(--blue), var(--navy)) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 10px 18px !important;
+  font-weight: 600 !important;
+}
 
 /* Inputs */
-input,select,textarea{
-  background:var(--glass)!important;border:1px solid var(--line)!important;border-radius:10px!important;
-  color:var(--ink)!important;padding:10px 12px!important}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(32,164,216,.18)}
+input, select, textarea {
+  background: var(--glass) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  color: var(--ink) !important;
+}
 
 /* Links */
-a{color:var(--blue)!important;text-decoration:none}
-a:hover{color:var(--accent)!important}
+a { color: var(--blue) !important; }
 
-/* Ocultar header oficial del portal (la app tiene el suyo) */
-[data-hrc-hidden="1"]{display:none!important}
-
-/* Ajustes generales */
-* {box-sizing:border-box}
-img{max-width:100%;height:auto}
+/* Forzar tipografía y colores en todo */
+* {
+  box-sizing: border-box;
+  font-family: inherit !important;
+}
