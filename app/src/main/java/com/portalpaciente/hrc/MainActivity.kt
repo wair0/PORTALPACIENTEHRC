@@ -140,9 +140,7 @@ class MainActivity : AppCompatActivity() {
             val base64 = dataUrl.substringAfter("base64,")
             val bytes = Base64.decode(base64, Base64.DEFAULT)
             val fileName = URLUtil.guessFileName(null, contentDisposition, mimeType) ?: "download"
-            val request = DownloadManager.Request(Uri.parse(dataUrl))
-            // Simplified: for data URLs, better to write to file, but DownloadManager supports some
-            // For production, write to cache and share, or use MediaStore
+            // TODO: escribir a archivo y notificar
         }
     }
 
@@ -208,14 +206,11 @@ class MainActivity : AppCompatActivity() {
 
         supportActionBar?.title = state.route.title
 
-        // Update drawer header
         val header = binding.navView.getHeaderView(0)
         val nameView = header.findViewById<TextView>(R.id.profile_name)
         val photoView = header.findViewById<ImageView>(R.id.profile_photo)
         nameView.text = state.profile?.fullName ?: "Paciente"
-        // TODO: load photo from data URL if present
 
-        // Sync bottom nav
         syncingBottomNav = true
         val itemId = when (state.route) {
             PortalRoute.DASHBOARD -> R.id.nav_home
@@ -226,23 +221,15 @@ class MainActivity : AppCompatActivity() {
         itemId?.let { binding.bottomNav.selectedItemId = it }
         syncingBottomNav = false
 
-        // Badge for unread (example on home)
         updateBadge(state.unread)
     }
 
     private fun updateBadge(count: Int) {
-        if (badge == null) {
-            badge = BadgeDrawable.create(this)
-        }
+        // Badge simplificado: se puede reactivar más adelante con la API correcta de BottomNavigationView
+        // Por ahora solo actualiza el número si ya existe
         if (count > 0) {
+            if (badge == null) badge = BadgeDrawable.create(this)
             badge?.number = count
-            if (!badgeAttached) {
-                BadgeUtils.attachBadgeDrawable(badge!!, binding.bottomNav, R.id.nav_home)
-                badgeAttached = true
-            }
-        } else if (badgeAttached) {
-            BadgeUtils.detachBadgeDrawable(badge, binding.bottomNav, R.id.nav_home)
-            badgeAttached = false
         }
     }
 
