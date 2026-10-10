@@ -9,9 +9,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Base64
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.WindowManager
+import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.URLUtil
 import android.webkit.WebChromeClient
@@ -99,6 +101,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupWebView() {
         val webView = binding.webView
         session.configureCookies(webView)
+        CookieManager.getInstance().flush()
 
         WebView.setWebContentsDebuggingEnabled(true)
 
@@ -108,18 +111,25 @@ class MainActivity : AppCompatActivity() {
             databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+            javaScriptCanOpenWindowsAutomatically = true
+            setSupportMultipleWindows(false)
+            mediaPlaybackRequiresUserGesture = false
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
                 WebSettingsCompat.setForceDark(this, WebSettingsCompat.FORCE_DARK_OFF)
             }
         }
 
-        // Temporalmente sin inyección de tema
         val script = ""
         val injectManually = false
 
         webView.webViewClient = PortalWebViewClient(this, viewModel, script, injectManually)
-        webView.webChromeClient = WebChromeClient()
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                Log.d("PortalWebView", "${consoleMessage.messageLevel()}: ${consoleMessage.message()} -- ${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}")
+                return true
+            }
+        }
         webView.addJavascriptInterface(PortalJsBridge(viewModel), "HRCBridge")
 
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
@@ -202,7 +212,6 @@ class MainActivity : AppCompatActivity() {
     private fun updateUi(state: UiState) {
         val isLogin = state.route == PortalRoute.LOGIN || !state.loggedIn
 
-        // Ocultar chrome nativo en login
         binding.toolbar.isVisible = !isLogin
         binding.bottomNav.isVisible = !isLogin
         binding.drawer.setDrawerLockMode(
