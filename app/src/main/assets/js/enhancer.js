@@ -1,9 +1,5 @@
 /**
- * Portal Paciente HRC - Enhancer v2
- *  1) Oculta el header oficial del portal (la app ya tiene su propia barra nativa) en todas las
- *     pantallas menos el login. Lo detecta por posición, no por clase.
- *  2) Reporta perfil / notificaciones al puente nativo.
- * Idempotente. Para desactivarlo: localStorage.hrc_keep_header = '1'
+ * Enhancer v2 - ocultamiento agresivo del header oficial
  */
 (function () {
   if (window.__hrcEnhancerLoaded) return;
@@ -11,62 +7,55 @@
 
   function isLogin() { return location.pathname.replace(/\/+$/, '') === '/login'; }
   function log(m) { try { console.log('[enhancer] ' + m); } catch (e) {} }
-  function keep() { try { return localStorage.getItem('hrc_keep_header') === '1'; } catch (e) { return false; } }
 
-  function setHidden(el, hidden) {
-    if (hidden) el.setAttribute('data-hrc-hidden', '1'); else el.removeAttribute('data-hrc-hidden');
-  }
+  function hideHeaders() {
+    if (isLogin()) return;
 
-  function hideOfficialHeader() {
-    var hidden = document.querySelectorAll('[data-hrc-hidden="1"]');
-    if (isLogin() || keep()) {
-      hidden.forEach(function (e) { setHidden(e, false); });
-      return;
-    }
-    if (hidden.length) return;
+    // Ocultar por selectores comunes
+    var selectors = [
+      'header', '.header', '.navbar', '.site-header', '.app-header',
+      '[class*="Header"]', '[class*="header"]', '[class*="Navbar"]',
+      '[class*="TopBar"]', '[class*="AppBar"]', 'footer', '.footer'
+    ];
+    selectors.forEach(function(sel) {
+      document.querySelectorAll(sel).forEach(function(el) {
+        el.style.setProperty('display', 'none', 'important');
+        el.setAttribute('data-hrc-hidden', '1');
+      });
+    });
 
+    // Detectar por posición (barra superior)
     var w = window.innerWidth;
-    var el = document.elementFromPoint(w / 2, 6);
-    if (!el || el === document.documentElement || el === document.body || el.id === 'root') return;
-
-    var cur = el;
-    while (cur.parentElement && cur.parentElement !== document.body && cur.parentElement.id !== 'root') {
-      var r = cur.getBoundingClientRect();
-      if (r.width > w * 0.7 && r.height > 30 && r.height < 120 && r.top < 20) {
-        setHidden(cur, true);
-        log('header oculto');
-        return;
+    var el = document.elementFromPoint(w / 2, 8);
+    if (el && el !== document.body && el !== document.documentElement) {
+      var cur = el;
+      for (var i = 0; i < 8 && cur; i++) {
+        var r = cur.getBoundingClientRect();
+        if (r.top < 10 && r.height > 20 && r.height < 100 && r.width > w * 0.6) {
+          cur.style.setProperty('display', 'none', 'important');
+          cur.setAttribute('data-hrc-hidden', '1');
+          log('header posicional oculto');
+          break;
+        }
+        cur = cur.parentElement;
       }
-      cur = cur.parentElement;
     }
   }
 
   function tryReportProfile() {
     try {
-      if (document.body && document.body.innerText && document.body.innerText.indexOf('tws.loader.loading') !== -1) return;
-
       var nameEl = document.querySelector('.user-name, .profile-name, .patient-name, .welcome');
       var name = nameEl ? nameEl.textContent.trim() : '';
-
-      var photoEl = document.querySelector('.avatar, .profile-photo');
-      var photo = (photoEl && photoEl.src && photoEl.src.indexOf('data:image') === 0) ? photoEl.src : '';
-
       if (name && window.HRCBridge && window.HRCBridge.onProfile) {
-        window.HRCBridge.onProfile(JSON.stringify({ name: name, photo: photo }));
-      }
-
-      var badge = document.querySelector('.badge, .notification-count');
-      var count = badge ? (parseInt(badge.textContent, 10) || 0) : 0;
-      if (window.HRCBridge && window.HRCBridge.onUnread) {
-        window.HRCBridge.onUnread(count);
+        window.HRCBridge.onProfile(JSON.stringify({ name: name }));
       }
     } catch (e) {}
   }
 
-  setTimeout(hideOfficialHeader, 800);
-  setTimeout(hideOfficialHeader, 2000);
+  setTimeout(hideHeaders, 500);
+  setTimeout(hideHeaders, 1500);
+  setTimeout(hideHeaders, 3000);
   setTimeout(tryReportProfile, 2000);
-  setTimeout(tryReportProfile, 5000);
 
-  log('enhancer v2 loaded');
+  log('enhancer loaded');
 })();
