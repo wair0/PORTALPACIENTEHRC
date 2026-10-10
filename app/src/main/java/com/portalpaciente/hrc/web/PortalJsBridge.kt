@@ -19,7 +19,7 @@ class PortalJsBridge(private val viewModel: PortalViewModel) {
             val obj = JSONObject(json)
             val name = obj.optString("name").trim().take(MAX_NAME)
             val photo = obj.optString("photo")
-                .takeIf { it.startsWith("data:image/") && it.length <= MAX_PHOTO }
+                .takeIf { it.startsWith("data:image/") && it.length <= MAX_PHOTO } ?: ""
             if (name.isNotEmpty()) viewModel.onProfile(ProfileInfo(name, photo))
         }
     }
