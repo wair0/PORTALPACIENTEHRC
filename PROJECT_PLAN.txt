@@ -55,8 +55,8 @@ Fase 6 - CI (HECHA)
   - Gradle wrapper (gradlew + properties)
   Continuidad: cada push genera APK debug descargable.
 
-Fase 7 - Estabilidad (post-prueba)
-  - Fix crash al abrir (si aparece)
+Fase 7 - Estabilidad (EN CURSO)
+  - Manejo de error SSL del portal (continúa con aviso en el host oficial)
   - Banner de error visible
   - Colores night consistentes
   Continuidad: app estable para uso diario.
@@ -70,4 +70,4 @@ REGLAS DE CONTINUIDAD
 
 PRÓXIMO PASO
 ------------
-Probar build local o esperar CI, luego Fase 7 (estabilidad post-prueba).
+Reconstruir APK y probar de nuevo. Si el portal carga, seguir puliendo Fase 7.
