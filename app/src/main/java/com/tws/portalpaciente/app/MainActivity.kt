@@ -11,7 +11,6 @@ import android.view.WindowManager
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.JsPromptResult
-import android.webkit.JsResult
 import android.webkit.URLUtil
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -43,6 +42,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: PortalViewModel by viewModels()
     private val session = SessionManager()
+
+    // Para reensamblar chunks del mapa
+    private val mapChunks = mutableMapOf<String, MutableMap<Int, String>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,10 +109,8 @@ class MainActivity : AppCompatActivity() {
                 defaultValue: String?,
                 result: JsPromptResult?
             ): Boolean {
-                if (message != null && message.startsWith("HRC_UI_MAP:")) {
-                    val payload = message.removePrefix("HRC_UI_MAP:")
-                    DebugLog.add("UI_MAP", "Recibido por prompt: ${payload.length} caracteres")
-                    PortalUiMapLogger.append(this@MainActivity, payload)
+                if (message != null && message.startsWith("HRC_UI_MAP_CHUNK:")) {
+                    handleMapChunk(message.removePrefix("HRC_UI_MAP_CHUNK:"))
                     result?.confirm("ok")
                     return true
                 }
@@ -137,6 +137,30 @@ class MainActivity : AppCompatActivity() {
                     (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
                 }.onFailure { DebugLog.add("Download", "No se pudo iniciar descarga: ${it.message}") }
             }
+        }
+    }
+
+    private fun handleMapChunk(data: String) {
+        // formato: id:index:total:chunk
+        val parts = data.split(":", limit = 4)
+        if (parts.size < 4) {
+            DebugLog.add("UI_MAP", "Chunk mal formado")
+            return
+        }
+        val id = parts[0]
+        val index = parts[1].toIntOrNull() ?: return
+        val total = parts[2].toIntOrNull() ?: return
+        val chunk = parts[3]
+
+        val map = mapChunks.getOrPut(id) { mutableMapOf() }
+        map[index] = chunk
+        DebugLog.add("UI_MAP", "Chunk $index/$total recibido (id=$id, ${chunk.length} chars)")
+
+        if (map.size == total) {
+            val full = (0 until total).joinToString("") { map[it] ?: "" }
+            DebugLog.add("UI_MAP", "Mapa completo reensamblado: ${full.length} caracteres")
+            PortalUiMapLogger.append(this, full)
+            mapChunks.remove(id)
         }
     }
 
