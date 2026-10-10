@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body, iframe { margin:0; padding:0; width:100%; height:100%; border:none; background:#fff; }
+  </style>
+</head>
+<body>
+  <iframe id="portal" src="https://tws.sanluis.gob.ar/login"></iframe>
+  <script>
+    // Intentar limpiar en el iframe también (si es same-origin, no lo es, pero por si acaso)
+    try {
+      var iframe = document.getElementById('portal');
+      iframe.onload = function() {
+        try {
+          console.log('[iframe] loaded');
+        } catch(e) {}
+      };
+    } catch(e) {}
+  </script>
+</body>
+</html>
