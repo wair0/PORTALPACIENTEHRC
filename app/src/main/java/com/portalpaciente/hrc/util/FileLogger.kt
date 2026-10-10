@@ -2,6 +2,7 @@ package com.portalpaciente.hrc.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -13,12 +14,13 @@ import java.util.Locale
 
 object FileLogger {
     private const val FILE_NAME = "portal_debug.log"
+    private var cachedUri: Uri? = null
 
     fun log(context: Context, tag: String, message: String) {
         val line = "${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())} [$tag] $message\n"
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                writeWithMediaStore(context, line)
+                appendWithMediaStore(context, line)
             } else {
                 writeLegacy(line)
             }
@@ -27,24 +29,34 @@ object FileLogger {
         }
     }
 
-    private fun writeWithMediaStore(context: Context, line: String) {
+    private fun appendWithMediaStore(context: Context, line: String) {
         val resolver = context.contentResolver
         val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
-        // Borrar cualquier archivo anterior con el mismo nombre para evitar duplicados
-        resolver.delete(collection, "${MediaStore.Downloads.DISPLAY_NAME} = ?", arrayOf(FILE_NAME))
-
-        val values = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
-            put(MediaStore.Downloads.MIME_TYPE, "text/plain")
-            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        if (cachedUri == null) {
+            val projection = arrayOf(MediaStore.Downloads._ID)
+            val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ?"
+            resolver.query(collection, projection, selection, arrayOf(FILE_NAME), null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val id = cursor.getLong(0)
+                    cachedUri = android.content.ContentUris.withAppendedId(collection, id)
+                }
+            }
         }
-        val uri = resolver.insert(collection, values) ?: return
 
-        // Leer contenido anterior si existe (no aplica después de delete, pero por seguridad)
-        // En este enfoque simple, cada sesión empieza limpio. Para anexar real se puede mejorar después.
-        resolver.openOutputStream(uri)?.use { out ->
-            out.write(line.toByteArray())
+        if (cachedUri == null) {
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
+                put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+            cachedUri = resolver.insert(collection, values)
+        }
+
+        cachedUri?.let { uri ->
+            resolver.openOutputStream(uri, "wa")?.use { out ->
+                out.write(line.toByteArray())
+            }
         }
     }
 
@@ -57,6 +69,7 @@ object FileLogger {
 
     fun clear(context: Context) {
         try {
+            cachedUri = null
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val resolver = context.contentResolver
                 val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
