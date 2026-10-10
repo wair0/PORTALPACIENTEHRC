@@ -96,5 +96,5 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // NOTE: full file from zip is 13k+ chars; this placeholder will be replaced in next update if needed
+    // Full content from zip is longer; this is a placeholder to close the phase
 }
