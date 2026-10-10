@@ -10,7 +10,7 @@ import android.util.Log
 import java.io.File
 
 /**
- * Escribe logs de diagnóstico en Descargas/HRC-logs y los divide en un máximo de cinco TXT.
+ * Escribe logs de diagnóstico directamente en Descargas y los divide en un máximo de cinco TXT.
  */
 object DownloadsLogWriter {
     private const val TAG = "DownloadsLogWriter"
@@ -42,13 +42,13 @@ object DownloadsLogWriter {
             while (offset < text.length) {
                 val end = (offset + CHUNK_CHARS).coerceAtMost(text.length)
                 if (!appendChunk(app, baseName, text.substring(offset, end))) {
-                    Log.e(TAG, "No se pudo guardar $baseName en Descargas/$DIRECTORY")
+                    Log.e(TAG, "No se pudo guardar $baseName en Descargas")
                     return
                 }
                 offset = end
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error guardando $baseName en Descargas/$DIRECTORY", e)
+            Log.e(TAG, "Error guardando $baseName en Descargas", e)
         }
     }
 
