@@ -13,7 +13,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.tws.portalpaciente.app.ui.PortalViewModel
 import com.tws.portalpaciente.app.util.FileLogger
-import java.util.UUID
 
 class PortalWebViewClient(
     private val context: Context,
@@ -24,7 +23,6 @@ class PortalWebViewClient(
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val uri = request.url
         if (PortalRoutes.isPortal(uri)) {
-            // Si es login y no tiene state, forzar uno nuevo
             if (uri.path?.contains("/login") == true && uri.getQueryParameter("state").isNullOrBlank()) {
                 val forced = PortalRoutes.newLoginUrl()
                 DebugLog.add("AUTH", "Forzando state en login: ${forced.substringAfter("state=")}")
@@ -48,6 +46,15 @@ class PortalWebViewClient(
 
     override fun onPageFinished(view: WebView, url: String?) {
         DebugLog.add("PAGE", "finish ${url?.substringBefore('?')}")
+
+        // Re-registrar el puente por si la navegación lo perdió
+        try {
+            view.addJavascriptInterface(PortalJsBridge(viewModel, context), "HRCBridge")
+            DebugLog.add("UI_MAP", "Puente HRCBridge re-registrado en onPageFinished")
+        } catch (e: Exception) {
+            DebugLog.add("UI_MAP", "Error al re-registrar puente: ${e.message}")
+        }
+
         if (uiMapScript.isBlank()) {
             DebugLog.add("UI_MAP", "No se cargó assets/js/ui-map.js: el script está vacío")
         } else if (url?.startsWith(PortalRoutes.BASE) == true) {
