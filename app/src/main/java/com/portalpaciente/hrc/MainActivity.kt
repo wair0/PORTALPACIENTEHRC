@@ -43,6 +43,7 @@ import com.portalpaciente.hrc.data.SessionManager
 import com.portalpaciente.hrc.databinding.ActivityMainBinding
 import com.portalpaciente.hrc.ui.PortalViewModel
 import com.portalpaciente.hrc.ui.UiState
+import com.portalpaciente.hrc.util.FileLogger
 import com.portalpaciente.hrc.web.PortalInjector
 import com.portalpaciente.hrc.web.PortalJsBridge
 import com.portalpaciente.hrc.web.PortalRoute
@@ -66,6 +67,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FileLogger.log(this, "MainActivity", "onCreate started")
 
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
@@ -74,6 +76,7 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        FileLogger.log(this, "MainActivity", "setContentView done")
 
         WebViewVersionHelper.checkAndPrompt(this)
 
@@ -101,12 +104,14 @@ class MainActivity : AppCompatActivity() {
         })
 
         if (savedInstanceState == null) {
+            FileLogger.log(this, "MainActivity", "loading LOGIN url")
             binding.webView.loadUrl(PortalRoutes.LOGIN)
         }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
+        FileLogger.log(this, "MainActivity", "setupWebView started")
         val webView = binding.webView
         session.configureCookies(webView)
         CookieManager.getInstance().flush()
@@ -127,7 +132,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Aplicar User-Agent compatible (versión real del WebView + Client Hints + JS stubs)
         PortalUserAgent.apply(this, webView)
 
         val script = ""
@@ -136,7 +140,9 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = PortalWebViewClient(this, viewModel, script, injectManually)
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                Log.d("PortalWebView", "${consoleMessage.messageLevel()}: ${consoleMessage.message()} -- ${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}")
+                val msg = "${consoleMessage.messageLevel()}: ${consoleMessage.message()} -- ${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}"
+                Log.d("PortalWebView", msg)
+                FileLogger.log(this@MainActivity, "WebConsole", msg)
                 return true
             }
         }
@@ -157,6 +163,7 @@ class MainActivity : AppCompatActivity() {
                 dm.enqueue(request)
             }
         }
+        FileLogger.log(this, "MainActivity", "setupWebView finished")
     }
 
     private fun handleDataUrlDownload(dataUrl: String, contentDisposition: String?, mimeType: String?) {
