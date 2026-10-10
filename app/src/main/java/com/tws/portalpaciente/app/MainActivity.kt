@@ -98,6 +98,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webView.addJavascriptInterface(PortalJsBridge(viewModel, this), "HRCBridge")
+        DebugLog.add("UI_MAP", "Puente HRCBridge registrado al iniciar WebView")
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             if (url.startsWith("data:")) {
                 handleDataUrlDownload(url, contentDisposition, mimeType)
