@@ -4,17 +4,10 @@ import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
-import android.os.Handler
-import android.os.Looper
 import android.util.Base64
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
 import android.view.WindowManager
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
@@ -35,9 +28,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
-import com.google.android.material.badge.BadgeDrawable
-import com.google.android.material.badge.BadgeUtils
-import com.google.android.material.badge.ExperimentalBadgeUtils
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.tws.portalpaciente.app.data.SessionManager
 import com.tws.portalpaciente.app.databinding.ActivityMainBinding
@@ -49,47 +39,27 @@ import com.tws.portalpaciente.app.web.PortalInjector
 import com.tws.portalpaciente.app.web.PortalJsBridge
 import com.tws.portalpaciente.app.web.PortalRoute
 import com.tws.portalpaciente.app.web.PortalRoutes
-import com.tws.portalpaciente.app.web.PortalUserAgent
 import com.tws.portalpaciente.app.web.PortalWebViewClient
+import com.tws.portalpaciente.app.web.PortalUserAgent
 import com.tws.portalpaciente.app.web.WebViewVersionHelper
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalBadgeUtils::class)
 class MainActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityMainBinding
     private val viewModel: PortalViewModel by viewModels()
     private val session = SessionManager()
-    private val handler = Handler(Looper.getMainLooper())
-
-    private var badge: BadgeDrawable? = null
-    private var badgeAttached = false
     private var syncingBottomNav = false
-
-    private val useIframe = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FileLogger.log(this, "MainActivity", "onCreate started")
-
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        FileLogger.log(this, "MainActivity", "setContentView done")
-
         WebViewVersionHelper.checkAndPrompt(this)
 
-        setSupportActionBar(binding.toolbar)
-        binding.toolbar.setNavigationIcon(R.drawable.ic_menu)
-        binding.toolbar.setNavigationContentDescription(R.string.open_menu)
-        binding.toolbar.setNavigationOnClickListener {
-            binding.drawer.openDrawer(GravityCompat.START)
-        }
-
+        setupHeader()
         setupWebView()
         setupDebugPanel()
         setupDrawer()
@@ -107,22 +77,25 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        if (savedInstanceState == null) {
-            FileLogger.log(this, "MainActivity", "loading LOGIN url")
-            binding.webView.loadUrl(PortalRoutes.LOGIN)
-        }
+        if (savedInstanceState == null) binding.webView.loadUrl(PortalRoutes.LOGIN)
     }
 
-    private fun setupDebugPanel() {
-        binding.debugFab.setOnClickListener {
-            binding.debugText.text = DebugLog.dump()
-            binding.debugPanel.isVisible = true
+    private fun setupHeader() {
+        binding.btnMenu.setOnClickListener {
+            if (binding.drawer.isDrawerOpen(GravityCompat.START)) {
+                binding.drawer.closeDrawer(GravityCompat.START)
+            } else {
+                binding.drawer.openDrawer(GravityCompat.START)
+            }
         }
-        binding.debugClose.setOnClickListener { binding.debugPanel.isVisible = false }
-        binding.debugRefresh.setOnClickListener { binding.debugText.text = DebugLog.dump() }
-        binding.debugCopy.setOnClickListener {
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            cm.setPrimaryClip(android.content.ClipData.newPlainText("log", DebugLog.dump()))
+        binding.btnRefresh.setOnClickListener { binding.webView.reload() }
+        binding.btnBell.setOnClickListener {
+            val count = viewModel.uiState.value.unread
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Notificaciones")
+                .setMessage(if (count > 0) "Tenés $count notificaciones sin leer en el portal." else "No hay notificaciones nuevas.")
+                .setPositiveButton("Cerrar", null)
+                .show()
         }
     }
 
@@ -132,9 +105,8 @@ class MainActivity : AppCompatActivity() {
         val webView = binding.webView
         session.configureCookies(webView)
         CookieManager.getInstance().flush()
-
         WebView.setWebContentsDebuggingEnabled(true)
-        webView.setBackgroundColor(android.graphics.Color.WHITE)
+        webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
         webView.settings.apply {
             javaScriptEnabled = true
@@ -151,12 +123,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         PortalUserAgent.apply(this, webView)
-
-        // Cargar y activar el tema visual
         val script = PortalInjector.loadScript(this)
+        // El registro document-start de PortalUserAgent es la vía principal. La inyección manual
+        // se mantiene como respaldo y es idempotente, por si cambia la versión de WebView.
         val injectManually = true
         FileLogger.log(this, "MainActivity", "Theme script length: ${script.length}")
-
         webView.webViewClient = PortalWebViewClient(this, viewModel, script, injectManually)
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
@@ -173,15 +144,19 @@ class MainActivity : AppCompatActivity() {
             if (url.startsWith("data:")) {
                 handleDataUrlDownload(url, contentDisposition, mimeType)
             } else {
-                val request = DownloadManager.Request(Uri.parse(url))
-                request.setMimeType(mimeType)
-                request.addRequestHeader("User-Agent", userAgent)
-                request.setDescription("Descargando...")
-                request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType))
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType))
-                val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                dm.enqueue(request)
+                runCatching {
+                    val request = DownloadManager.Request(Uri.parse(url))
+                    request.setMimeType(mimeType)
+                    request.addRequestHeader("User-Agent", userAgent)
+                    request.setDescription("Descargando...")
+                    request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType))
+                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    request.setDestinationInExternalPublicDir(
+                        android.os.Environment.DIRECTORY_DOWNLOADS,
+                        URLUtil.guessFileName(url, contentDisposition, mimeType)
+                    )
+                    (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
+                }.onFailure { FileLogger.log(this, "Download", "No se pudo iniciar descarga: ${it.message}") }
             }
         }
         FileLogger.log(this, "MainActivity", "setupWebView finished")
@@ -191,7 +166,22 @@ class MainActivity : AppCompatActivity() {
         runCatching {
             val base64 = dataUrl.substringAfter("base64,")
             val bytes = Base64.decode(base64, Base64.DEFAULT)
-            val fileName = URLUtil.guessFileName(null, contentDisposition, mimeType) ?: "download"
+            val fileName = URLUtil.guessFileName(null, contentDisposition, mimeType) ?: "documento"
+            FileLogger.log(this, "Download", "Descarga data URL detectada: $fileName (${bytes.size} bytes)")
+        }.onFailure { FileLogger.log(this, "Download", "Error al procesar data URL: ${it.message}") }
+    }
+
+    private fun setupDebugPanel() {
+        binding.debugFab.setOnClickListener {
+            binding.debugText.text = DebugLog.dump()
+            binding.debugPanel.isVisible = true
+        }
+        binding.debugClose.setOnClickListener { binding.debugPanel.isVisible = false }
+        binding.debugRefresh.setOnClickListener { binding.debugText.text = DebugLog.dump() }
+        binding.debugCopy.setOnClickListener {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("log", DebugLog.dump()))
+            android.widget.Toast.makeText(this, "Registro copiado", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -220,9 +210,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadRoute(url: String) {
-        binding.webView.loadUrl(url)
-    }
+    private fun loadRoute(url: String) { binding.webView.loadUrl(url) }
 
     private fun confirmLogout() {
         MaterialAlertDialogBuilder(this)
@@ -240,37 +228,28 @@ class MainActivity : AppCompatActivity() {
     private fun observeState() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
-                    updateUi(state)
-                }
+                viewModel.uiState.collect { state -> updateUi(state) }
             }
         }
     }
 
     private fun updateUi(state: UiState) {
         val isLogin = state.route == PortalRoute.LOGIN || !state.loggedIn
-
         binding.toolbar.isVisible = !isLogin
         binding.bottomNav.isVisible = !isLogin
         binding.drawer.setDrawerLockMode(
             if (isLogin) DrawerLayout.LOCK_MODE_LOCKED_CLOSED else DrawerLayout.LOCK_MODE_UNLOCKED
         )
-
         binding.progressBar.isVisible = state.loading && !isLogin
         binding.errorBanner.isVisible = state.error != null
         binding.errorText.text = state.error
-        binding.retryButton.setOnClickListener {
-            binding.webView.reload()
-        }
+        binding.retryButton.setOnClickListener { binding.webView.reload() }
 
         if (!isLogin) {
-            supportActionBar?.title = state.route.title
-
+            binding.headerTitle.text = state.route.title
             val header = binding.navView.getHeaderView(0)
-            val nameView = header.findViewById<TextView>(R.id.profile_name)
-            val photoView = header.findViewById<ImageView>(R.id.profile_photo)
-            nameView.text = state.profile?.fullName ?: "Paciente"
-
+            header.findViewById<TextView>(R.id.profile_name).text = state.profile?.fullName ?: "Paciente"
+            header.findViewById<ImageView>(R.id.profile_photo)
             syncingBottomNav = true
             val itemId = when (state.route) {
                 PortalRoute.DASHBOARD -> R.id.nav_home
@@ -280,30 +259,14 @@ class MainActivity : AppCompatActivity() {
             }
             itemId?.let { binding.bottomNav.selectedItemId = it }
             syncingBottomNav = false
-
             updateBadge(state.unread)
+        } else {
+            binding.bellBadge.isVisible = false
         }
     }
 
     private fun updateBadge(count: Int) {
-        if (count > 0) {
-            if (badge == null) badge = BadgeDrawable.create(this)
-            badge?.number = count
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_toolbar, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_refresh -> {
-                binding.webView.reload()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
+        binding.bellBadge.isVisible = count > 0
+        binding.bellBadge.text = if (count > 99) "99+" else count.toString()
     }
 }
