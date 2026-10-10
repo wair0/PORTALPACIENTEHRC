@@ -47,6 +47,7 @@ import com.portalpaciente.hrc.web.PortalInjector
 import com.portalpaciente.hrc.web.PortalJsBridge
 import com.portalpaciente.hrc.web.PortalRoute
 import com.portalpaciente.hrc.web.PortalRoutes
+import com.portalpaciente.hrc.web.PortalUserAgent
 import com.portalpaciente.hrc.web.PortalWebViewClient
 import com.portalpaciente.hrc.web.WebViewVersionHelper
 import kotlinx.coroutines.launch
@@ -112,16 +113,12 @@ class MainActivity : AppCompatActivity() {
 
         WebView.setWebContentsDebuggingEnabled(true)
 
-        // User-Agent de Chrome móvil más reciente posible (sin referencias a WebView)
-        val chromeUa = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.6834.79 Mobile Safari/537.36"
-
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            userAgentString = chromeUa
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             mediaPlaybackRequiresUserGesture = false
@@ -130,7 +127,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Inyección de estilos desactivada temporalmente; se puede reactivar cuando el portal cargue
+        // Aplicar User-Agent compatible (versión real del WebView + Client Hints + JS stubs)
+        PortalUserAgent.apply(this, webView)
+
         val script = ""
         val injectManually = false
 
