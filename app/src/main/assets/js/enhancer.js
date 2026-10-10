@@ -1,7 +1,6 @@
 /**
- * Portal Paciente HRC - Enhancer
- * Inyectado junto con el CSS. Idempotente.
- * Reporta datos de perfil al bridge nativo cuando están disponibles.
+ * Portal Paciente HRC - Enhancer (simplificado)
+ * Idempotente. Reporta perfil solo cuando el DOM ya tiene contenido real.
  */
 (function () {
   if (window.__hrcEnhancerLoaded) return;
@@ -9,52 +8,31 @@
 
   function tryReportProfile() {
     try {
-      // Intentar extraer nombre del DOM (ajustar selectores según el portal real)
-      var nameEl = document.querySelector('.user-name, .profile-name, .patient-name, h1, .welcome');
+      // Evitar actuar mientras el loader está visible
+      if (document.body && document.body.innerText && document.body.innerText.indexOf('tws.loader.loading') !== -1) {
+        return;
+      }
+
+      var nameEl = document.querySelector('.user-name, .profile-name, .patient-name, .welcome');
       var name = nameEl ? nameEl.textContent.trim() : '';
 
-      // Foto si existe (data URL o src)
-      var photoEl = document.querySelector('.avatar, .profile-photo, img.user-photo');
-      var photo = '';
-      if (photoEl && photoEl.src && photoEl.src.startsWith('data:image')) {
-        photo = photoEl.src;
-      }
+      var photoEl = document.querySelector('.avatar, .profile-photo');
+      var photo = (photoEl && photoEl.src && photoEl.src.indexOf('data:image') === 0) ? photoEl.src : '';
 
       if (name && window.HRCBridge && window.HRCBridge.onProfile) {
-        window.HRCBridge.onProfile(JSON.stringify({
-          name: name,
-          photo: photo
-        }));
+        window.HRCBridge.onProfile(JSON.stringify({ name: name, photo: photo }));
       }
 
-      // Unread placeholder (ajustar si el portal muestra badge)
-      var badge = document.querySelector('.badge, .notification-count, .unread');
-      var count = badge ? parseInt(badge.textContent, 10) || 0 : 0;
+      var badge = document.querySelector('.badge, .notification-count');
+      var count = badge ? (parseInt(badge.textContent, 10) || 0) : 0;
       if (window.HRCBridge && window.HRCBridge.onUnread) {
         window.HRCBridge.onUnread(count);
       }
-    } catch (e) {
-      // silencioso
-    }
+    } catch (e) {}
   }
 
-  // Intentar al cargar y después de posibles actualizaciones AJAX
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', tryReportProfile);
-  } else {
-    tryReportProfile();
-  }
-
-  // Observar cambios de DOM para SPAs o cargas parciales
-  var observer = new MutationObserver(function () {
-    tryReportProfile();
-  });
-  observer.observe(document.body || document.documentElement, {
-    childList: true,
-    subtree: true
-  });
-
-  // Reintentar después de un tiempo
-  setTimeout(tryReportProfile, 1500);
-  setTimeout(tryReportProfile, 4000);
+  // Solo reintentar unas pocas veces, sin observer agresivo
+  setTimeout(tryReportProfile, 2000);
+  setTimeout(tryReportProfile, 5000);
+  setTimeout(tryReportProfile, 10000);
 })();
