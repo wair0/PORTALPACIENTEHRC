@@ -108,8 +108,9 @@ class MainActivity : AppCompatActivity() {
         })
 
         if (savedInstanceState == null) {
-            FileLogger.log(this, "MainActivity", "loading LOGIN url")
-            binding.webView.loadUrl(PortalRoutes.LOGIN)
+            val loginUrl = PortalRoutes.newLoginUrl()
+            FileLogger.log(this, "MainActivity", "loading LOGIN url with state")
+            binding.webView.loadUrl(loginUrl)
         }
     }
 
@@ -152,7 +153,6 @@ class MainActivity : AppCompatActivity() {
 
         PortalUserAgent.apply(this, webView)
 
-        // Cargar y activar el tema visual
         val script = PortalInjector.loadScript(this)
         val injectManually = true
         FileLogger.log(this, "MainActivity", "Theme script length: ${script.length}")
@@ -231,7 +231,7 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Salir") { _, _ ->
                 session.clear(binding.webView)
                 viewModel.logoutHandled()
-                binding.webView.loadUrl(PortalRoutes.LOGIN)
+                binding.webView.loadUrl(PortalRoutes.newLoginUrl())
             }
             .setNegativeButton("Cancelar", null)
             .show()
