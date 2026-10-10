@@ -9,20 +9,10 @@
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/on_surface</item>
         <item name="colorOnSurfaceVariant">@color/nav_inactive</item>
-        <item name="android:statusBarColor">@color/header_start</item>
-        <item name="android:navigationBarColor">@color/surface</item>
-        <item name="android:windowBackground">@color/background</item>
-    </style>
-    <style name="Widget.HRC.NavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/hrc_line</item>
-        <item name="android:width">68dp</item>
-        <item name="android:height">34dp</item>
-    </style>
-    <style name="Widget.HRC.BottomNav" parent="Widget.Material3.BottomNavigationView">
-        <item name="android:background">@drawable/bg_bottom_nav</item>
-        <item name="itemActiveIndicatorStyle">@style/Widget.HRC.NavIndicator</item>
-        <item name="labelVisibilityMode">labeled</item>
-        <item name="android:elevation">12dp</item>
-        <item name="android:paddingTop">4dp</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@android:color/white</item>
     </style>
 </resources>
