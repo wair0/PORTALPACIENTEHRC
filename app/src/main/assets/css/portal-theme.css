@@ -1,0 +1,89 @@
+/* Portal Paciente HRC - Tema propio inyectado */
+/* Oculta header/footer nativos del portal y aplica estilo limpio */
+
+/* Ocultar elementos del portal original */
+header,
+.header,
+.navbar,
+.nav-header,
+.site-header,
+.top-bar,
+footer,
+.footer,
+.site-footer {
+  display: none !important;
+}
+
+/* Ajustes generales */
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  background: #fafafa !important;
+  color: #1a1a1a !important;
+}
+
+/* Contenedor principal */
+.container,
+.main-content,
+#content,
+.page-content {
+  max-width: 100% !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+}
+
+/* Botones */
+button,
+.btn,
+input[type="submit"],
+.button {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+/* Links y accent */
+a {
+  color: #00695C !important;
+}
+
+a:hover {
+  color: #004D40 !important;
+}
+
+/* Cards / secciones */
+.card,
+.panel,
+.box {
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+  border: none !important;
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  border-radius: 8px !important;
+  border: 1px solid #ddd !important;
+  padding: 10px 12px !important;
+}
+
+/* Tablas de resultados */
+table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+th,
+td {
+  padding: 10px 8px !important;
+  text-align: left !important;
+}
+
+/* Mensajes de éxito/error */
+.alert,
+.message {
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
