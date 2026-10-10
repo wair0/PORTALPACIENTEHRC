@@ -8,6 +8,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import java.io.File
+import java.util.concurrent.Executors
 
 /**
  * Escribe logs de diagnóstico directamente en Descargas y los divide en un máximo de cinco TXT.
@@ -18,6 +19,9 @@ object DownloadsLogWriter {
     private const val PART_LIMIT_BYTES = 350 * 1024
     private const val CHUNK_CHARS = 48 * 1024
     @Volatile private var appContext: Context? = null
+    private val ioExecutor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "HRC-Diagnostic-Log").apply { isDaemon = true }
+    }
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -29,7 +33,7 @@ object DownloadsLogWriter {
             Log.e(TAG, "Logger no inicializado; se descarta escritura de $baseName")
             return
         }
-        append(context, baseName, text)
+        ioExecutor.execute { append(context, baseName, text) }
     }
 
     @Synchronized
