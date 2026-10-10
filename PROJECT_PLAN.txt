@@ -40,7 +40,7 @@ Fase 3 - Recursos (HECHA)
   - res/xml/data_extraction_rules.xml
   Continuidad: la UI nativa ya se puede inflar.
 
-Fase 4 - Assets + tema
+Fase 4 - Assets + tema (HECHA)
   - assets/css/portal-theme.css
   - assets/js/enhancer.js
   Continuidad: el WebView inyecta el tema propio y oculta el header del portal.
@@ -69,4 +69,4 @@ REGLAS DE CONTINUIDAD
 
 PRÓXIMO PASO
 ------------
-Continuar con Fase 4 (assets CSS y JS para tema).
+Continuar con Fase 5 (icono adaptive).
