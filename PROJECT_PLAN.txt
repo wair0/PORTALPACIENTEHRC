@@ -52,8 +52,8 @@ Fase 5 - Icono adaptive (HECHA)
 
 Fase 6 - CI (HECHA)
   - .github/workflows/android.yml
+  - Gradle wrapper (gradlew + properties)
   Continuidad: cada push genera APK debug descargable.
-  Nota: requiere gradle wrapper (gradlew) en el repo para el CI.
 
 Fase 7 - Estabilidad (post-prueba)
   - Fix crash al abrir (si aparece)
@@ -70,4 +70,4 @@ REGLAS DE CONTINUIDAD
 
 PRÓXIMO PASO
 ------------
-Agregar Gradle wrapper si falta, probar build local, luego Fase 7 (estabilidad post-prueba).
+Probar build local o esperar CI, luego Fase 7 (estabilidad post-prueba).
