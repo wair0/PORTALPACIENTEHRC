@@ -3,11 +3,14 @@ package com.portalpaciente.hrc
 import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.view.Menu
@@ -53,10 +56,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: PortalViewModel by viewModels()
     private val session = SessionManager()
+    private val handler = Handler(Looper.getMainLooper())
 
     private var badge: BadgeDrawable? = null
     private var badgeAttached = false
     private var syncingBottomNav = false
+    private var loaderTimeoutPosted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +86,12 @@ class MainActivity : AppCompatActivity() {
         setupBottomNav()
         observeState()
 
+        binding.openInChromeButton.setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(PortalRoutes.LOGIN))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+        }
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
@@ -94,7 +105,18 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             binding.webView.loadUrl(PortalRoutes.LOGIN)
+            scheduleLoaderTimeout()
         }
+    }
+
+    private fun scheduleLoaderTimeout() {
+        if (loaderTimeoutPosted) return
+        loaderTimeoutPosted = true
+        handler.postDelayed({
+            if (viewModel.uiState.value.route == PortalRoute.LOGIN || !viewModel.uiState.value.loggedIn) {
+                binding.openInChromeButton.isVisible = true
+            }
+        }, 8000)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -217,6 +239,10 @@ class MainActivity : AppCompatActivity() {
         binding.drawer.setDrawerLockMode(
             if (isLogin) DrawerLayout.LOCK_MODE_LOCKED_CLOSED else DrawerLayout.LOCK_MODE_UNLOCKED
         )
+
+        if (!isLogin) {
+            binding.openInChromeButton.isVisible = false
+        }
 
         binding.progressBar.isVisible = state.loading && !isLogin
         binding.errorBanner.isVisible = state.error != null
