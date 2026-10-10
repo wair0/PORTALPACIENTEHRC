@@ -27,6 +27,7 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
@@ -100,8 +101,17 @@ class MainActivity : AppCompatActivity() {
         })
 
         if (savedInstanceState == null) {
-            binding.webView.loadUrl(PortalRoutes.LOGIN)
+            // Abrir con Custom Tabs (motor de Chrome) para evitar detección del WebView
+            openInCustomTab(PortalRoutes.LOGIN)
         }
+    }
+
+    private fun openInCustomTab(url: String) {
+        val builder = CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .setShareState(CustomTabsIntent.SHARE_STATE_OFF)
+        val customTabsIntent = builder.build()
+        customTabsIntent.launchUrl(this, Uri.parse(url))
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -112,7 +122,6 @@ class MainActivity : AppCompatActivity() {
 
         WebView.setWebContentsDebuggingEnabled(true)
 
-        // User-Agent de Chrome móvil real y reciente (sin referencias a WebView)
         val chromeUa = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.135 Mobile Safari/537.36"
 
         webView.settings.apply {
@@ -170,9 +179,9 @@ class MainActivity : AppCompatActivity() {
     private fun setupDrawer() {
         binding.navView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_dashboard -> loadRoute(PortalRoutes.DASHBOARD)
-                R.id.nav_exams -> loadRoute(PortalRoutes.EXAMS)
-                R.id.nav_profile -> loadRoute(PortalRoutes.PROFILE)
+                R.id.nav_dashboard -> openInCustomTab(PortalRoutes.DASHBOARD)
+                R.id.nav_exams -> openInCustomTab(PortalRoutes.EXAMS)
+                R.id.nav_profile -> openInCustomTab(PortalRoutes.PROFILE)
                 R.id.nav_logout -> confirmLogout()
             }
             binding.drawer.closeDrawer(GravityCompat.START)
@@ -184,16 +193,16 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             if (syncingBottomNav) return@setOnItemSelectedListener true
             when (item.itemId) {
-                R.id.nav_home -> loadRoute(PortalRoutes.DASHBOARD)
-                R.id.nav_exams_bottom -> loadRoute(PortalRoutes.EXAMS)
-                R.id.nav_profile_bottom -> loadRoute(PortalRoutes.PROFILE)
+                R.id.nav_home -> openInCustomTab(PortalRoutes.DASHBOARD)
+                R.id.nav_exams_bottom -> openInCustomTab(PortalRoutes.EXAMS)
+                R.id.nav_profile_bottom -> openInCustomTab(PortalRoutes.PROFILE)
             }
             true
         }
     }
 
     private fun loadRoute(url: String) {
-        binding.webView.loadUrl(url)
+        openInCustomTab(url)
     }
 
     private fun confirmLogout() {
@@ -203,7 +212,7 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Salir") { _, _ ->
                 session.clear(binding.webView)
                 viewModel.logoutHandled()
-                binding.webView.loadUrl(PortalRoutes.LOGIN)
+                openInCustomTab(PortalRoutes.LOGIN)
             }
             .setNegativeButton("Cancelar", null)
             .show()
@@ -232,7 +241,7 @@ class MainActivity : AppCompatActivity() {
         binding.errorBanner.isVisible = state.error != null
         binding.errorText.text = state.error
         binding.retryButton.setOnClickListener {
-            binding.webView.reload()
+            openInCustomTab(PortalRoutes.LOGIN)
         }
 
         if (!isLogin) {
@@ -272,7 +281,7 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_refresh -> {
-                binding.webView.reload()
+                openInCustomTab(PortalRoutes.DASHBOARD)
                 true
             }
             else -> super.onOptionsItemSelected(item)
