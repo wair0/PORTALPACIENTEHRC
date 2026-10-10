@@ -100,19 +100,25 @@ class MainActivity : AppCompatActivity() {
         val webView = binding.webView
         session.configureCookies(webView)
 
+        // Habilitar debugging para inspeccionar desde chrome://inspect
+        WebView.setWebContentsDebuggingEnabled(true)
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
-            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            // User-Agent más parecido a Chrome de escritorio para evitar detecciones
+            userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
                 WebSettingsCompat.setForceDark(this, WebSettingsCompat.FORCE_DARK_OFF)
             }
         }
 
-        val script = PortalInjector.script(this)
-        val injectManually = !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+        // Temporalmente sin inyección de tema para ver si el portal carga solo
+        val script = "" // PortalInjector.script(this)
+        val injectManually = false
 
         webView.webViewClient = PortalWebViewClient(this, viewModel, script, injectManually)
         webView.webChromeClient = WebChromeClient()
@@ -140,7 +146,6 @@ class MainActivity : AppCompatActivity() {
             val base64 = dataUrl.substringAfter("base64,")
             val bytes = Base64.decode(base64, Base64.DEFAULT)
             val fileName = URLUtil.guessFileName(null, contentDisposition, mimeType) ?: "download"
-            // TODO: escribir a archivo y notificar
         }
     }
 
@@ -225,8 +230,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateBadge(count: Int) {
-        // Badge simplificado: se puede reactivar más adelante con la API correcta de BottomNavigationView
-        // Por ahora solo actualiza el número si ya existe
         if (count > 0) {
             if (badge == null) badge = BadgeDrawable.create(this)
             badge?.number = count
