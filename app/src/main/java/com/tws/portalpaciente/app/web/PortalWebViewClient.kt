@@ -12,6 +12,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.tws.portalpaciente.app.ui.PortalViewModel
+import com.tws.portalpaciente.app.util.FileLogger
 
 class PortalWebViewClient(
     private val context: Context,
@@ -81,10 +82,12 @@ class PortalWebViewClient(
     }
 
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
-        val host = view.url?.let { Uri.parse(it).host } ?: error.url?.let { Uri.parse(it).host }
-        if (host == PortalRoutes.HOST) {
+        val host = error.url?.let { Uri.parse(it).host } ?: view.url?.let { Uri.parse(it).host }
+        FileLogger.log(context, "SSL", "Error ${error.primaryError} en host=$host url=${error.url}")
+
+        // Continuar siempre si es el host del portal o si no se pudo determinar el host
+        if (host == null || host == PortalRoutes.HOST || host.endsWith(".sanluis.gob.ar")) {
             handler.proceed()
-            viewModel.onError("Aviso: certificado del portal no verificado. Continuando.")
         } else {
             handler.cancel()
             viewModel.onError("No se pudo verificar la conexión segura (${error.primaryError}).")
