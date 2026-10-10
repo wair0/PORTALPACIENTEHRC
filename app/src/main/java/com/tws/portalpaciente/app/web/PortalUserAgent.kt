@@ -29,7 +29,7 @@ object PortalUserAgent {
 
             applyRequestedWithAllowList(webView.settings, ctx)
             applyUserAgentMetadata(webView.settings, major, ctx)
-            injectDocumentStartScript(ctx, webView, major)
+            injectDocumentStartScripts(ctx, webView, major)
 
             Log.d(TAG, "UA aplicado: $ua")
             FileLogger.log(ctx, TAG, "apply() completed successfully")
@@ -95,19 +95,30 @@ object PortalUserAgent {
         }
     }
 
-    private fun injectDocumentStartScript(ctx: Context, webView: WebView, major: Int) {
+    private fun injectDocumentStartScripts(ctx: Context, webView: WebView, major: Int) {
         try {
             if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
                 FileLogger.log(ctx, TAG, "DOCUMENT_START_SCRIPT not supported")
                 return
             }
-            val js = ctx.assets.open("js/ua-compat.js").bufferedReader().use { it.readText() }
+
+            // TTS polyfill primero
+            val tts = try {
+                ctx.assets.open("js/tts-polyfill.js").bufferedReader().use { it.readText() }
+            } catch (e: Exception) { "" }
+            if (tts.isNotEmpty()) {
+                WebViewCompat.addDocumentStartJavaScript(webView, tts, setOf(PortalRoutes.BASE))
+                FileLogger.log(ctx, TAG, "tts-polyfill.js injected")
+            }
+
+            // ua-compat
+            val ua = ctx.assets.open("js/ua-compat.js").bufferedReader().use { it.readText() }
                 .replace("__CHROME_MAJOR__", major.toString())
                 .replace("__DIAGNOSTICS__", diagnostics.toString())
-            WebViewCompat.addDocumentStartJavaScript(webView, js, setOf(PortalRoutes.BASE))
+            WebViewCompat.addDocumentStartJavaScript(webView, ua, setOf(PortalRoutes.BASE))
             FileLogger.log(ctx, TAG, "ua-compat.js injected")
         } catch (e: Exception) {
-            FileLogger.log(ctx, TAG, "Error injecting script: ${e.message}")
+            FileLogger.log(ctx, TAG, "Error injecting scripts: ${e.message}")
         }
     }
 }
