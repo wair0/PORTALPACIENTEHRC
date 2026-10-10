@@ -1,5 +1,8 @@
 /**
- * Enhancer v2 - ocultamiento agresivo del header oficial
+ * Portal Paciente HRC - Enhancer v3
+ *  1) Oculta el header oficial del portal (la app tiene su propia barra nativa), salvo en el login.
+ *  2) Clasifica los bloques del portal por su aspecto ORIGINAL y los marca con data-hrc.
+ *  3) Reporta perfil / notificaciones al puente nativo.
  */
 (function () {
   if (window.__hrcEnhancerLoaded) return;
@@ -7,55 +10,42 @@
 
   function isLogin() { return location.pathname.replace(/\/+$/, '') === '/login'; }
   function log(m) { try { console.log('[enhancer] ' + m); } catch (e) {} }
+  log('enhancer v3 loaded');
 
-  function hideHeaders() {
+  function hideHeader() {
     if (isLogin()) return;
-
-    // Ocultar por selectores comunes
-    var selectors = [
-      'header', '.header', '.navbar', '.site-header', '.app-header',
-      '[class*="Header"]', '[class*="header"]', '[class*="Navbar"]',
-      '[class*="TopBar"]', '[class*="AppBar"]', 'footer', '.footer'
-    ];
-    selectors.forEach(function(sel) {
-      document.querySelectorAll(sel).forEach(function(el) {
+    var sels = ['header', '.header', '.navbar', '.site-header', '[class*="Header"]', '[class*="Navbar"]', '[class*="TopBar"]'];
+    sels.forEach(function(s) {
+      document.querySelectorAll(s).forEach(function(el) {
         el.style.setProperty('display', 'none', 'important');
         el.setAttribute('data-hrc-hidden', '1');
       });
     });
-
-    // Detectar por posición (barra superior)
-    var w = window.innerWidth;
-    var el = document.elementFromPoint(w / 2, 8);
-    if (el && el !== document.body && el !== document.documentElement) {
-      var cur = el;
-      for (var i = 0; i < 8 && cur; i++) {
-        var r = cur.getBoundingClientRect();
-        if (r.top < 10 && r.height > 20 && r.height < 100 && r.width > w * 0.6) {
-          cur.style.setProperty('display', 'none', 'important');
-          cur.setAttribute('data-hrc-hidden', '1');
-          log('header posicional oculto');
-          break;
-        }
-        cur = cur.parentElement;
-      }
-    }
   }
 
-  function tryReportProfile() {
-    try {
-      var nameEl = document.querySelector('.user-name, .profile-name, .patient-name, .welcome');
-      var name = nameEl ? nameEl.textContent.trim() : '';
-      if (name && window.HRCBridge && window.HRCBridge.onProfile) {
-        window.HRCBridge.onProfile(JSON.stringify({ name: name }));
+  function classify() {
+    document.querySelectorAll('div, section, article, button, a').forEach(function(el) {
+      if (el.hasAttribute('data-hrc')) return;
+      var r = el.getBoundingClientRect();
+      if (r.width < 40 || r.height < 20) return;
+
+      var cs = getComputedStyle(el);
+      var bg = cs.backgroundColor;
+      var shadow = cs.boxShadow;
+      var radius = parseFloat(cs.borderRadius) || 0;
+
+      if (el.tagName === 'BUTTON' || el.tagName === 'A' && r.height < 50) {
+        el.setAttribute('data-hrc', 'btn');
+      } else if (radius > 8 && shadow !== 'none' && r.width > 100) {
+        el.setAttribute('data-hrc', 'card');
+      } else if (radius > 12 && r.height < 40) {
+        el.setAttribute('data-hrc', 'chip');
       }
-    } catch (e) {}
+    });
   }
 
-  setTimeout(hideHeaders, 500);
-  setTimeout(hideHeaders, 1500);
-  setTimeout(hideHeaders, 3000);
-  setTimeout(tryReportProfile, 2000);
-
-  log('enhancer loaded');
+  setTimeout(hideHeader, 600);
+  setTimeout(hideHeader, 2000);
+  setTimeout(classify, 1000);
+  setTimeout(classify, 3000);
 })();
