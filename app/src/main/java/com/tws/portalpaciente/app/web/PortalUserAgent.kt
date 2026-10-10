@@ -102,7 +102,16 @@ object PortalUserAgent {
                 return
             }
 
-            // TTS polyfill primero
+            // Probe primero
+            val probe = try {
+                ctx.assets.open("js/portal-probe.js").bufferedReader().use { it.readText() }
+            } catch (e: Exception) { "" }
+            if (probe.isNotEmpty()) {
+                WebViewCompat.addDocumentStartJavaScript(webView, probe, setOf(PortalRoutes.BASE))
+                FileLogger.log(ctx, TAG, "portal-probe.js injected")
+            }
+
+            // TTS polyfill
             val tts = try {
                 ctx.assets.open("js/tts-polyfill.js").bufferedReader().use { it.readText() }
             } catch (e: Exception) { "" }
