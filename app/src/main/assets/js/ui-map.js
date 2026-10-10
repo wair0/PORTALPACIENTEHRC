@@ -52,25 +52,23 @@
   }
 
   function sendMap(payload) {
-    // Primero intentar el puente normal
-    if (window.HRCBridge && typeof window.HRCBridge.saveUiMap === 'function') {
+    // Guardar completo en variable global para que Android lo tire
+    window.__hrcLastUiMap = payload;
+    console.log('[UI_MAP] Mapa listo en window.__hrcLastUiMap (' + payload.length + ' chars)');
+
+    // Enviar por partes via prompt (límite ~8KB por prompt)
+    var chunkSize = 8000;
+    var total = Math.ceil(payload.length / chunkSize);
+    var id = Date.now().toString(36);
+    for (var i = 0; i < total; i++) {
+      var chunk = payload.slice(i * chunkSize, (i + 1) * chunkSize);
       try {
-        window.HRCBridge.saveUiMap(payload);
-        console.log('[UI_MAP] Enviado por puente HRCBridge');
-        return true;
+        window.prompt('HRC_UI_MAP_CHUNK:' + id + ':' + i + ':' + total + ':' + chunk);
       } catch (e) {
-        console.warn('[UI_MAP] Puente falló, usando prompt: ' + e);
+        console.error('[UI_MAP] Error en chunk ' + i + ': ' + e);
       }
     }
-    // Fallback confiable: prompt
-    try {
-      window.prompt('HRC_UI_MAP:' + payload);
-      console.log('[UI_MAP] Enviado por prompt');
-      return true;
-    } catch (e) {
-      console.error('[UI_MAP] Prompt también falló: ' + e);
-      return false;
-    }
+    console.log('[UI_MAP] Enviados ' + total + ' chunks');
   }
 
   function buildMap(reason) {
