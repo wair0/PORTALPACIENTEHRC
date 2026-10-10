@@ -45,7 +45,7 @@ Fase 4 - Assets + tema (HECHA)
   - assets/js/enhancer.js
   Continuidad: el WebView inyecta el tema propio y oculta el header del portal.
 
-Fase 5 - Icono adaptive
+Fase 5 - Icono adaptive (HECHA)
   - mipmap-anydpi-v26/ic_launcher.xml + ic_launcher_round.xml
   - android:icon y android:roundIcon en Manifest
   Continuidad: la app tiene icono en el launcher.
@@ -69,4 +69,4 @@ REGLAS DE CONTINUIDAD
 
 PRÓXIMO PASO
 ------------
-Continuar con Fase 5 (icono adaptive).
+Continuar con Fase 6 (CI con GitHub Actions para APK debug).
