@@ -57,7 +57,11 @@ class MainActivity : AppCompatActivity() {
                 if (binding.webView.canGoBack()) binding.webView.goBack() else finish()
             }
         })
-        if (savedInstanceState == null) binding.webView.loadUrl(PortalRoutes.LOGIN)
+        if (savedInstanceState == null) {
+            val loginUrl = PortalRoutes.newLoginUrl()
+            DebugLog.add("AUTH", "Abriendo login con parámetro state UUID generado")
+            binding.webView.loadUrl(loginUrl)
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
