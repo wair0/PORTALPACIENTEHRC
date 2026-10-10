@@ -66,7 +66,6 @@ class MainActivity : AppCompatActivity() {
     private var badgeAttached = false
     private var syncingBottomNav = false
 
-    // false = carga directa del portal
     private val useIframe = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -109,13 +108,8 @@ class MainActivity : AppCompatActivity() {
         })
 
         if (savedInstanceState == null) {
-            if (useIframe) {
-                FileLogger.log(this, "MainActivity", "loading iframe.html")
-                binding.webView.loadUrl("file:///android_asset/iframe.html")
-            } else {
-                FileLogger.log(this, "MainActivity", "loading LOGIN url")
-                binding.webView.loadUrl(PortalRoutes.LOGIN)
-            }
+            FileLogger.log(this, "MainActivity", "loading LOGIN url")
+            binding.webView.loadUrl(PortalRoutes.LOGIN)
         }
     }
 
@@ -158,8 +152,10 @@ class MainActivity : AppCompatActivity() {
 
         PortalUserAgent.apply(this, webView)
 
-        val script = ""
-        val injectManually = false
+        // Cargar y activar el tema visual
+        val script = PortalInjector.loadScript(this)
+        val injectManually = true
+        FileLogger.log(this, "MainActivity", "Theme script length: ${script.length}")
 
         webView.webViewClient = PortalWebViewClient(this, viewModel, script, injectManually)
         webView.webChromeClient = object : WebChromeClient() {
