@@ -44,6 +44,7 @@ import com.tws.portalpaciente.app.databinding.ActivityMainBinding
 import com.tws.portalpaciente.app.ui.PortalViewModel
 import com.tws.portalpaciente.app.ui.UiState
 import com.tws.portalpaciente.app.util.FileLogger
+import com.tws.portalpaciente.app.web.DebugLog
 import com.tws.portalpaciente.app.web.PortalInjector
 import com.tws.portalpaciente.app.web.PortalJsBridge
 import com.tws.portalpaciente.app.web.PortalRoute
@@ -88,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupWebView()
+        setupDebugPanel()
         setupDrawer()
         setupBottomNav()
         observeState()
@@ -109,6 +111,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupDebugPanel() {
+        binding.debugFab.setOnClickListener {
+            binding.debugText.text = DebugLog.dump()
+            binding.debugPanel.isVisible = true
+        }
+        binding.debugClose.setOnClickListener { binding.debugPanel.isVisible = false }
+        binding.debugRefresh.setOnClickListener { binding.debugText.text = DebugLog.dump() }
+        binding.debugCopy.setOnClickListener {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.setPrimaryClip(android.content.ClipData.newPlainText("log", DebugLog.dump()))
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         FileLogger.log(this, "MainActivity", "setupWebView started")
@@ -117,6 +132,7 @@ class MainActivity : AppCompatActivity() {
         CookieManager.getInstance().flush()
 
         WebView.setWebContentsDebuggingEnabled(true)
+        webView.setBackgroundColor(android.graphics.Color.WHITE)
 
         webView.settings.apply {
             javaScriptEnabled = true
@@ -143,6 +159,7 @@ class MainActivity : AppCompatActivity() {
                 val msg = "${consoleMessage.messageLevel()}: ${consoleMessage.message()} -- ${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}"
                 Log.d("PortalWebView", msg)
                 FileLogger.log(this@MainActivity, "WebConsole", msg)
+                DebugLog.add("JS", msg)
                 return true
             }
         }
