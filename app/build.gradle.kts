@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.portalpaciente.hrc"
+    namespace = "com.tws.portalpaciente.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.portalpaciente.hrc"
+        applicationId = "com.tws.portalpaciente.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
