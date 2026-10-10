@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         DownloadsLogWriter.initialize(applicationContext)
         DebugLog.initialize(applicationContext)
-        DebugLog.add("APP", "Inicio de MainActivity; logs en Descargas/HRC-logs")
+        DebugLog.add("APP", "Inicio de MainActivity")
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         })
         if (savedInstanceState == null) {
             val loginUrl = PortalRoutes.newLoginUrl()
-            DebugLog.add("AUTH", "Abriendo login con parámetro state UUID generado")
+            DebugLog.add("AUTH", "Abriendo login con state: ${loginUrl.contains("state=")}")
             binding.webView.loadUrl(loginUrl)
         }
     }
@@ -88,7 +88,6 @@ class MainActivity : AppCompatActivity() {
         val uiMapScript = runCatching {
             assets.open("js/ui-map.js").bufferedReader().use { it.readText() }
         }.getOrDefault("")
-        // Sin CSS propio, sin enhancer visual, sin header/barra inferior ni scripts de forced reflow.
         webView.webViewClient = PortalWebViewClient(this, viewModel, uiMapScript)
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
