@@ -3,6 +3,7 @@ package com.portalpaciente.hrc.web
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.net.http.SslError
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.SslErrorHandler
@@ -27,24 +28,37 @@ class PortalWebViewClient(
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val uri = request.url
-        if (PortalRoutes.isPortal(uri)) return false // el portal se navega dentro de la app
+        // Cualquier URL del portal (incluyendo /login?state=...) se navega dentro de la app
+        if (PortalRoutes.isPortal(uri)) {
+            return false
+        }
 
         when (uri.scheme) {
             "tel", "mailto" -> openExternally(Intent(Intent.ACTION_VIEW, uri))
-            "https" -> openExternally(Intent(Intent.ACTION_VIEW, uri)) // navegador del sistema
-            else -> Unit // http, file, content, intent, javascript: bloqueados
+            "https" -> openExternally(Intent(Intent.ACTION_VIEW, uri))
+            else -> Unit
         }
         return true
     }
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         viewModel.onPageStarted()
-        if (injectManually) view.evaluateJavascript(script, null)
+        if (injectManually && script.isNotEmpty()) view.evaluateJavascript(script, null)
     }
 
     override fun onPageFinished(view: WebView, url: String?) {
-        if (injectManually) view.evaluateJavascript(script, null)
+        if (injectManually && script.isNotEmpty()) view.evaluateJavascript(script, null)
         viewModel.onPageFinished(url)
+
+        // Si terminó en /login sin state, forzar una recarga para que el servidor genere el state
+        url?.let {
+            val uri = Uri.parse(it)
+            if (uri.path?.trimEnd('/') == "/login" && uri.getQueryParameter("state").isNullOrBlank()) {
+                view.postDelayed({
+                    view.loadUrl(PortalRoutes.LOGIN)
+                }, 500)
+            }
+        }
     }
 
     override fun onReceivedError(
@@ -55,16 +69,11 @@ class PortalWebViewClient(
         if (request.isForMainFrame) viewModel.onError(error.description?.toString().orEmpty())
     }
 
-    /**
-     * Para el host del portal oficial se continúa (muchos sitios institucionales tienen
-     * problemas de cadena de certificados en WebView). Se avisa en la UI.
-     * Para cualquier otro host se cancela.
-     */
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
-        val host = view.url?.let { android.net.Uri.parse(it).host } ?: error.url?.let { android.net.Uri.parse(it).host }
+        val host = view.url?.let { Uri.parse(it).host } ?: error.url?.let { Uri.parse(it).host }
         if (host == PortalRoutes.HOST) {
             handler.proceed()
-            viewModel.onError("Aviso: el certificado del portal no pudo verificarse completamente. Continuando de todos modos.")
+            viewModel.onError("Aviso: certificado del portal no verificado. Continuando.")
         } else {
             handler.cancel()
             viewModel.onError("No se pudo verificar la conexión segura (${error.primaryError}).")
