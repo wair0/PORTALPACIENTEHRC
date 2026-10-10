@@ -25,6 +25,7 @@ import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.tws.portalpaciente.app.data.SessionManager
 import com.tws.portalpaciente.app.databinding.ActivityMainBinding
+import com.tws.portalpaciente.app.util.DownloadsLogWriter
 import com.tws.portalpaciente.app.ui.PortalViewModel
 import com.tws.portalpaciente.app.ui.UiState
 import com.tws.portalpaciente.app.web.DebugLog
@@ -42,6 +43,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        DownloadsLogWriter.initialize(applicationContext)
+        DebugLog.initialize(applicationContext)
+        DebugLog.add("APP", "Inicio de MainActivity; logs en Descargas/HRC-logs")
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
