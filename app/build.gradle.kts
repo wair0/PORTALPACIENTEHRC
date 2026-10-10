@@ -45,6 +45,6 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.9.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("androidx.webkit:webkit:1.11.0")
+    implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }
