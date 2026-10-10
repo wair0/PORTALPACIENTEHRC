@@ -9,18 +9,20 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/background">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="0dp"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            android:elevation="4dp"
+            android:background="@drawable/bg_toolbar"
+            android:elevation="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:titleTextColor="@android:color/white" />
+            app:titleTextColor="@color/on_primary"
+            app:subtitleTextColor="@color/on_primary" />
 
         <ProgressBar
             android:id="@+id/progressBar"
@@ -28,6 +30,7 @@
             android:layout_width="0dp"
             android:layout_height="4dp"
             android:indeterminate="true"
+            android:indeterminateTint="@color/accent"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -37,6 +40,7 @@
             android:id="@+id/webView"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:background="@color/background"
             app:layout_constraintBottom_toTopOf="@id/bottomNav"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -73,8 +77,11 @@
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNav"
+            style="@style/Widget.HRC.BottomNav"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            app:itemIconTint="@color/nav_item"
+            app:itemTextColor="@color/nav_item"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -94,6 +101,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="#CC000000"
+            android:elevation="16dp"
             android:orientation="vertical"
             android:padding="8dp"
             android:visibility="gone"
@@ -148,6 +156,9 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:background="@color/surface"
+        app:itemIconTint="@color/nav_item"
+        app:itemTextColor="@color/nav_item"
         app:headerLayout="@layout/nav_header"
         app:menu="@menu/drawer_menu" />
 
