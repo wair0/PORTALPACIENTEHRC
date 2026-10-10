@@ -1,0 +1,23 @@
+package com.portalpaciente.hrc.data
+
+import android.webkit.CookieManager
+import android.webkit.WebStorage
+import android.webkit.WebView
+
+/** Maneja cookies y limpieza de sesión del portal. */
+class SessionManager {
+
+    fun configureCookies(webView: WebView) {
+        val cm = CookieManager.getInstance()
+        cm.setAcceptCookie(true)
+        cm.setAcceptThirdPartyCookies(webView, true)
+    }
+
+    fun clear(webView: WebView) {
+        CookieManager.getInstance().removeAllCookies(null)
+        CookieManager.getInstance().flush()
+        WebStorage.getInstance().deleteAllData()
+        webView.clearCache(true)
+        webView.clearHistory()
+    }
+}
