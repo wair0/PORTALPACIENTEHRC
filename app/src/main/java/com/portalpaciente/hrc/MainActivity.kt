@@ -48,6 +48,7 @@ import com.portalpaciente.hrc.web.PortalJsBridge
 import com.portalpaciente.hrc.web.PortalRoute
 import com.portalpaciente.hrc.web.PortalRoutes
 import com.portalpaciente.hrc.web.PortalWebViewClient
+import com.portalpaciente.hrc.web.WebViewVersionHelper
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalBadgeUtils::class)
@@ -73,6 +74,9 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Avisar si el WebView del sistema es viejo
+        WebViewVersionHelper.checkAndPrompt(this)
 
         setSupportActionBar(binding.toolbar)
         binding.toolbar.setNavigationIcon(R.drawable.ic_menu)
