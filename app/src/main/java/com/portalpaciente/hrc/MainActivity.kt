@@ -100,7 +100,6 @@ class MainActivity : AppCompatActivity() {
         val webView = binding.webView
         session.configureCookies(webView)
 
-        // Habilitar debugging para inspeccionar desde chrome://inspect
         WebView.setWebContentsDebuggingEnabled(true)
 
         webView.settings.apply {
@@ -109,15 +108,14 @@ class MainActivity : AppCompatActivity() {
             databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            // User-Agent más parecido a Chrome de escritorio para evitar detecciones
             userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
                 WebSettingsCompat.setForceDark(this, WebSettingsCompat.FORCE_DARK_OFF)
             }
         }
 
-        // Temporalmente sin inyección de tema para ver si el portal carga solo
-        val script = "" // PortalInjector.script(this)
+        // Temporalmente sin inyección de tema
+        val script = ""
         val injectManually = false
 
         webView.webViewClient = PortalWebViewClient(this, viewModel, script, injectManually)
@@ -202,31 +200,42 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUi(state: UiState) {
-        binding.progressBar.isVisible = state.loading
+        val isLogin = state.route == PortalRoute.LOGIN || !state.loggedIn
+
+        // Ocultar chrome nativo en login
+        binding.toolbar.isVisible = !isLogin
+        binding.bottomNav.isVisible = !isLogin
+        binding.drawer.setDrawerLockMode(
+            if (isLogin) DrawerLayout.LOCK_MODE_LOCKED_CLOSED else DrawerLayout.LOCK_MODE_UNLOCKED
+        )
+
+        binding.progressBar.isVisible = state.loading && !isLogin
         binding.errorBanner.isVisible = state.error != null
         binding.errorText.text = state.error
         binding.retryButton.setOnClickListener {
             binding.webView.reload()
         }
 
-        supportActionBar?.title = state.route.title
+        if (!isLogin) {
+            supportActionBar?.title = state.route.title
 
-        val header = binding.navView.getHeaderView(0)
-        val nameView = header.findViewById<TextView>(R.id.profile_name)
-        val photoView = header.findViewById<ImageView>(R.id.profile_photo)
-        nameView.text = state.profile?.fullName ?: "Paciente"
+            val header = binding.navView.getHeaderView(0)
+            val nameView = header.findViewById<TextView>(R.id.profile_name)
+            val photoView = header.findViewById<ImageView>(R.id.profile_photo)
+            nameView.text = state.profile?.fullName ?: "Paciente"
 
-        syncingBottomNav = true
-        val itemId = when (state.route) {
-            PortalRoute.DASHBOARD -> R.id.nav_home
-            PortalRoute.EXAMS -> R.id.nav_exams_bottom
-            PortalRoute.PROFILE -> R.id.nav_profile_bottom
-            else -> null
+            syncingBottomNav = true
+            val itemId = when (state.route) {
+                PortalRoute.DASHBOARD -> R.id.nav_home
+                PortalRoute.EXAMS -> R.id.nav_exams_bottom
+                PortalRoute.PROFILE -> R.id.nav_profile_bottom
+                else -> null
+            }
+            itemId?.let { binding.bottomNav.selectedItemId = it }
+            syncingBottomNav = false
+
+            updateBadge(state.unread)
         }
-        itemId?.let { binding.bottomNav.selectedItemId = it }
-        syncingBottomNav = false
-
-        updateBadge(state.unread)
     }
 
     private fun updateBadge(count: Int) {
