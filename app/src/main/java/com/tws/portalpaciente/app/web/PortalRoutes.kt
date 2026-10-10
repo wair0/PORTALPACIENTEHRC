@@ -1,6 +1,7 @@
 package com.tws.portalpaciente.app.web
 
 import android.net.Uri
+import java.util.UUID
 
 enum class PortalRoute(val title: String) {
     LOGIN("Ingresar"),
@@ -19,6 +20,11 @@ object PortalRoutes {
     const val PROFILE = "$BASE/patients/profile"
 
     fun isPortal(uri: Uri): Boolean = uri.scheme == "https" && uri.host == HOST
+
+    fun newLoginUrl(): String {
+        val state = UUID.randomUUID().toString()
+        return "$LOGIN?state=$state"
+    }
 
     fun routeOf(url: String?): PortalRoute {
         if (url.isNullOrBlank()) return PortalRoute.OTHER
