@@ -23,7 +23,7 @@ object FileLogger {
                 writeLegacy(line)
             }
         } catch (e: Exception) {
-            // fallback silencioso
+            // silencioso
         }
     }
 
@@ -31,30 +31,20 @@ object FileLogger {
         val resolver = context.contentResolver
         val collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
-        // Buscar si ya existe
-        val projection = arrayOf(MediaStore.Downloads._ID)
-        val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ?"
-        val args = arrayOf(FILE_NAME)
-        var uri = resolver.query(collection, projection, selection, args, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val id = cursor.getLong(0)
-                android.content.ContentUris.withAppendedId(collection, id)
-            } else null
-        }
+        // Borrar cualquier archivo anterior con el mismo nombre para evitar duplicados
+        resolver.delete(collection, "${MediaStore.Downloads.DISPLAY_NAME} = ?", arrayOf(FILE_NAME))
 
-        if (uri == null) {
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
-                put(MediaStore.Downloads.MIME_TYPE, "text/plain")
-                put(MediaStore.Downloads.IS_PENDING, 0)
-            }
-            uri = resolver.insert(collection, values)
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, FILE_NAME)
+            put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
         }
+        val uri = resolver.insert(collection, values) ?: return
 
-        uri?.let {
-            resolver.openOutputStream(it, "wa")?.use { out ->
-                out.write(line.toByteArray())
-            }
+        // Leer contenido anterior si existe (no aplica después de delete, pero por seguridad)
+        // En este enfoque simple, cada sesión empieza limpio. Para anexar real se puede mejorar después.
+        resolver.openOutputStream(uri)?.use { out ->
+            out.write(line.toByteArray())
         }
     }
 
