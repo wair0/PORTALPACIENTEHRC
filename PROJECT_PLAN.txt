@@ -14,60 +14,18 @@ FASES (1-2 commits por fase)
 ----------------------------
 
 Fase 1 - Base (HECHA)
-  - settings.gradle.kts, build.gradle.kts, gradle.properties, README.md
-  - app/build.gradle.kts
-  - AndroidManifest.xml
-  Estado: compilable en estructura
-
 Fase 2 - Fuentes Kotlin (HECHA)
-  - MainActivity.kt (completo)
-  - ui/PortalViewModel.kt
-  - web/PortalWebViewClient.kt
-  - web/PortalInjector.kt
-  - web/PortalRoutes.kt
-  - web/PortalJsBridge.kt
-  - data/SessionManager.kt
-  - data/ProfileInfo.kt
-  Continuidad: la app ya tiene la lógica de navegación y estado.
-
 Fase 3 - Recursos (HECHA)
-  - res/layout/activity_main.xml
-  - res/layout/nav_header.xml
-  - res/menu/bottom_menu.xml, drawer_menu.xml, menu_toolbar.xml
-  - res/values/colors.xml, themes.xml, strings.xml
-  - res/values-night/colors.xml
-  - res/drawable/*.xml (ic_*, bg_header_gradient)
-  - res/xml/data_extraction_rules.xml
-  Continuidad: la UI nativa ya se puede inflar.
-
 Fase 4 - Assets + tema (HECHA)
-  - assets/css/portal-theme.css
-  - assets/js/enhancer.js
-  Continuidad: el WebView inyecta el tema propio y oculta el header del portal.
-
 Fase 5 - Icono adaptive (HECHA)
-  - mipmap-anydpi-v26/ic_launcher.xml + ic_launcher_round.xml
-  - android:icon y android:roundIcon en Manifest
-  Continuidad: la app tiene icono en el launcher.
-
 Fase 6 - CI (HECHA)
-  - .github/workflows/android.yml
-  - Gradle wrapper (gradlew + properties)
-  Continuidad: cada push genera APK debug descargable.
 
 Fase 7 - Estabilidad (EN CURSO)
-  - Manejo de error SSL del portal (continúa con aviso en el host oficial)
-  - Banner de error visible
-  - Colores night consistentes
-  Continuidad: app estable para uso diario.
-
-REGLAS DE CONTINUIDAD
----------------------
-- Cada fase deja el proyecto en estado compilable.
-- No se mezclan fases en el mismo commit.
-- Si una fase rompe el build, se corrige en el commit siguiente de la misma fase antes de pasar a la siguiente.
-- El APK se prueba después de la Fase 6. La Fase 7 depende del logcat real.
+  - Manejo SSL del portal (continúa con aviso)
+  - Chrome nativo oculto en login
+  - Portal se queda en loader "tws.loader.loading" (diagnóstico en curso)
+  - Banner de error y colores night pendientes
 
 PRÓXIMO PASO
 ------------
-Reconstruir APK y probar de nuevo. Si el portal carga, seguir puliendo Fase 7.
+Ver si el portal carga en Chrome del celular y revisar consola vía chrome://inspect.
