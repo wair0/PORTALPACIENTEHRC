@@ -50,9 +50,10 @@ Fase 5 - Icono adaptive (HECHA)
   - android:icon y android:roundIcon en Manifest
   Continuidad: la app tiene icono en el launcher.
 
-Fase 6 - CI
+Fase 6 - CI (HECHA)
   - .github/workflows/android.yml
   Continuidad: cada push genera APK debug descargable.
+  Nota: requiere gradle wrapper (gradlew) en el repo para el CI.
 
 Fase 7 - Estabilidad (post-prueba)
   - Fix crash al abrir (si aparece)
@@ -69,4 +70,4 @@ REGLAS DE CONTINUIDAD
 
 PRÓXIMO PASO
 ------------
-Continuar con Fase 6 (CI con GitHub Actions para APK debug).
+Agregar Gradle wrapper si falta, probar build local, luego Fase 7 (estabilidad post-prueba).
