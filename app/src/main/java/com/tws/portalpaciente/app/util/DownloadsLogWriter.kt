@@ -16,8 +16,8 @@ import java.util.concurrent.Executors
 object DownloadsLogWriter {
     private const val TAG = "DownloadsLogWriter"
     private const val PARTS = 5
-    private const val PART_LIMIT_BYTES = 350 * 1024
-    private const val CHUNK_CHARS = 48 * 1024
+    private const val PART_LIMIT_BYTES = 2 * 1024 * 1024   // 2 MB por parte
+    private const val CHUNK_CHARS = 64 * 1024
     @Volatile private var appContext: Context? = null
     private val ioExecutor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "HRC-Diagnostic-Log").apply { isDaemon = true }
