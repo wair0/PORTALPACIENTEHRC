@@ -20,6 +20,19 @@ class PortalWebViewClient(
     private val injectManually: Boolean
 ) : WebViewClient() {
 
+    private var forceRenderScript: String? = null
+
+    private fun getForceRenderScript(): String {
+        if (forceRenderScript == null) {
+            forceRenderScript = try {
+                context.assets.open("js/force-render.js").bufferedReader().use { it.readText() }
+            } catch (e: Exception) {
+                ""
+            }
+        }
+        return forceRenderScript ?: ""
+    }
+
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val uri = request.url
         if (PortalRoutes.isPortal(uri)) {
@@ -41,6 +54,12 @@ class PortalWebViewClient(
 
     override fun onPageFinished(view: WebView, url: String?) {
         if (injectManually && script.isNotEmpty()) view.evaluateJavascript(script, null)
+
+        val force = getForceRenderScript()
+        if (force.isNotEmpty()) {
+            view.evaluateJavascript(force, null)
+        }
+
         viewModel.onPageFinished(url)
 
         url?.let {
