@@ -17,7 +17,6 @@ object DownloadsLogWriter {
     private const val PARTS = 5
     private const val PART_LIMIT_BYTES = 350 * 1024
     private const val CHUNK_CHARS = 48 * 1024
-    private const val DIRECTORY = "HRC-logs"
     @Volatile private var appContext: Context? = null
 
     fun initialize(context: Context) {
@@ -69,10 +68,7 @@ object DownloadsLogWriter {
                 output.bufferedWriter(Charsets.UTF_8).use { it.write(chunk) }
                 return true
             } else {
-                val dir = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    DIRECTORY
-                )
+                val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 if (!dir.exists() && !dir.mkdirs()) return false
                 val file = File(dir, name)
                 val size = if (file.exists()) file.length() else 0L
@@ -90,7 +86,7 @@ object DownloadsLogWriter {
             context.contentResolver.openOutputStream(uri, "wa")?.bufferedWriter(Charsets.UTF_8)?.use { it.write(chunk) }
                 ?: return false
         } else {
-            val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), DIRECTORY)
+            val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (!dir.exists() && !dir.mkdirs()) return false
             File(dir, name).appendText(chunk, Charsets.UTF_8)
         }
@@ -104,7 +100,7 @@ object DownloadsLogWriter {
             collection,
             arrayOf(MediaStore.Downloads._ID, MediaStore.Downloads.SIZE),
             selection,
-            arrayOf(name, Environment.DIRECTORY_DOWNLOADS + "/" + DIRECTORY + "/"),
+            arrayOf(name, Environment.DIRECTORY_DOWNLOADS + "/"),
             null
         )?.use { cursor ->
             if (cursor.moveToFirst()) {
@@ -121,7 +117,7 @@ object DownloadsLogWriter {
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, name)
             put(MediaStore.Downloads.MIME_TYPE, "text/plain")
-            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + DIRECTORY)
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
         }
         return context.contentResolver.insert(
             MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values
