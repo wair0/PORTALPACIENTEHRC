@@ -10,6 +10,8 @@ import android.util.Log
 import android.view.WindowManager
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
+import android.webkit.JsPromptResult
+import android.webkit.JsResult
 import android.webkit.URLUtil
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -26,6 +28,7 @@ import androidx.webkit.WebViewFeature
 import com.tws.portalpaciente.app.data.SessionManager
 import com.tws.portalpaciente.app.databinding.ActivityMainBinding
 import com.tws.portalpaciente.app.util.DownloadsLogWriter
+import com.tws.portalpaciente.app.util.PortalUiMapLogger
 import com.tws.portalpaciente.app.ui.PortalViewModel
 import com.tws.portalpaciente.app.ui.UiState
 import com.tws.portalpaciente.app.web.DebugLog
@@ -95,6 +98,23 @@ class MainActivity : AppCompatActivity() {
                 Log.d("PortalWebView", msg)
                 DebugLog.add("JS", msg)
                 return true
+            }
+
+            override fun onJsPrompt(
+                view: WebView?,
+                url: String?,
+                message: String?,
+                defaultValue: String?,
+                result: JsPromptResult?
+            ): Boolean {
+                if (message != null && message.startsWith("HRC_UI_MAP:")) {
+                    val payload = message.removePrefix("HRC_UI_MAP:")
+                    DebugLog.add("UI_MAP", "Recibido por prompt: ${payload.length} caracteres")
+                    PortalUiMapLogger.append(this@MainActivity, payload)
+                    result?.confirm("ok")
+                    return true
+                }
+                return super.onJsPrompt(view, url, message, defaultValue, result)
             }
         }
         webView.addJavascriptInterface(PortalJsBridge(viewModel, this), "HRCBridge")
