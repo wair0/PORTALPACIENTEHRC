@@ -66,8 +66,8 @@ class MainActivity : AppCompatActivity() {
     private var badgeAttached = false
     private var syncingBottomNav = false
 
-    // true = cargar via iframe local para prueba
-    private val useIframe = true
+    // false = carga directa del portal
+    private val useIframe = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
