@@ -1,0 +1,64 @@
+PORTALPACIENTEHRC — ESTADO ACTUAL DEL PROYECTO
+================================================
+
+Repositorio: wair0/PORTALPACIENTEHRC
+Rama de trabajo: fix/aplicar-tema-visual-zip
+Pull request: https://github.com/wair0/PORTALPACIENTEHRC/pull/1
+
+1. INICIO DE SESIÓN
+-------------------
+La generación del parámetro state UUID para la URL de inicio de sesión está implementada.
+En las pruebas reportadas, el login volvió a mostrarse correctamente sin tener que minimizar
+y restaurar la aplicación.
+
+2. ESTILO VISUAL DEL PORTAL
+---------------------------
+Mantener el diseño oficial del portal. No aplicar CSS ni scripts que alteren la apariencia
+o provoquen que desaparezcan datos del sitio. El problema anterior de datos desaparecidos
+se relacionó con el estilo visual personalizado.
+
+3. PROBLEMA PENDIENTE: ARCHIVO DEL MAPA UI
+-----------------------------------------
+El archivo portal_ui_map_*.txt no se generó en la prueba del usuario. Se añadieron registros
+de diagnóstico para identificar en qué etapa se interrumpe el proceso.
+
+Archivos relevantes:
+- app/src/main/java/com/tws/portalpaciente/app/util/DownloadsLogWriter.kt
+- app/src/main/java/com/tws/portalpaciente/app/util/PortalUiMapLogger.kt
+- app/src/main/java/com/tws/portalpaciente/app/web/PortalJsBridge.kt
+- app/src/main/java/com/tws/portalpaciente/app/web/PortalWebViewClient.kt
+- app/src/main/assets/js/ui-map.js
+
+4. DIAGNÓSTICOS ESPERADOS
+-------------------------
+Buscar en portal_debug_*.txt eventos relacionados con [UI_MAP], incluidos:
+- Inyección del script en la página.
+- Finalización de evaluateJavascript.
+- Inicio de captura y cantidad de elementos capturados.
+- Disponibilidad de HRCBridge.
+- Recepción del mapa por el puente JavaScript/Android.
+- Resultado de la escritura en Descargas.
+
+Interpretación:
+- Si no aparece el registro de inyección, revisar la lectura e inyección del script.
+- Si aparece que el puente no está disponible, revisar el registro y ciclo de vida del puente.
+- Si Android recibe el mapa pero falla el guardado, revisar DownloadsLogWriter y MediaStore.
+- Si el archivo se guarda, verificar la carpeta Descargas y los nombres de archivo numerados.
+
+5. ARCHIVOS DE REGISTRO
+-----------------------
+Los registros se diseñaron para escribirse en la carpeta Descargas, con división en archivos
+numerados para evitar TXT demasiado grandes:
+- portal_debug_1.txt, portal_debug_2.txt, ...
+- portal_ui_map_1.txt, portal_ui_map_2.txt, ...
+
+6. SIGUIENTE PASO
+-----------------
+Instalar la compilación más reciente que supere CI, abrir el portal y reproducir el flujo.
+Después revisar los archivos portal_debug_*.txt en Descargas y confirmar si se creó
+portal_ui_map_*.txt. No dar por resuelto el problema hasta comprobarlo en el dispositivo.
+
+NOTA
+----
+Este documento resume el estado conocido y los pasos de diagnóstico. La generación del archivo
+del mapa UI todavía requiere confirmación en el dispositivo.

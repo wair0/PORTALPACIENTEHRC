@@ -1,0 +1,66 @@
+PORTALPACIENTEHRC - ESTADO ACTUAL DEL TRABAJO
+Fecha: 10/10/2026
+
+REPOSITORIO
+https://github.com/wair0/PORTALPACIENTEHRC
+
+RAMA DE TRABAJO
+fix/aplicar-tema-visual-zip
+
+PULL REQUEST
+PR #1: https://github.com/wair0/PORTALPACIENTEHRC/pull/1
+Rama destino: main
+
+PROBLEMAS QUE VENIMOS INVESTIGANDO
+1. La pantalla de inicio de sesión tarda demasiado en aparecer o queda en blanco. En las pruebas descritas, llega a aparecer después de minimizar la aplicación y restaurarla unas 2 o 3 veces.
+2. Los datos de la pantalla Inicio se van perdiendo/desapareciendo gradualmente.
+3. Se necesita observar la interfaz oficial del portal sin que los estilos o scripts personalizados interfieran, para poder identificar qué elementos HTML, CSS, JavaScript y secciones se cargan y cuándo.
+4. Los registros anteriores no se estaban encontrando en la carpeta Descargas del teléfono. Es necesario comprobar en el dispositivo que los nuevos TXT realmente se creen y se actualicen.
+
+NUEVO HALLAZGO: INICIO DE SESIÓN
+- La app abría directamente https://tws.sanluis.gob.ar/login, sin parámetro state.
+- El usuario indicó que el flujo esperado usa una URL del formato https://tws.sanluis.gob.ar/login?state=<UUID>.
+- Se modificó PortalRoutes.kt para generar un UUID nuevo mediante UUID.randomUUID() al comenzar un flujo de login.
+- MainActivity.kt ahora llama PortalRoutes.newLoginUrl() al iniciar una sesión de actividad nueva y registra un evento AUTH sin guardar el valor del state en los logs.
+- Esto corrige la ausencia del parámetro en la URL que genera la app, pero todavía es una hipótesis pendiente de validación: falta confirmar que el servidor acepte el state generado por el cliente y que la pantalla de login aparezca correctamente.
+
+ÚLTIMOS CAMBIOS APLICADOS EN LA RAMA
+- Se añadió app/src/main/java/com/tws/portalpaciente/app/util/DownloadsLogWriter.kt para escribir registros en la carpeta Descargas de Android.
+- Se conectó DebugLog con el escritor persistente para conservar los eventos de depuración, además del buffer temporal en memoria.
+- Se conectó PortalUiMapLogger para guardar el mapa de la interfaz en TXT.
+- Los registros se dividen en archivos numerados, con un máximo previsto de cinco partes por tipo para evitar un único TXT excesivamente grande.
+- Los nombres esperados son:
+  portal_debug_1.txt, portal_debug_2.txt, ... hasta portal_debug_5.txt
+  portal_ui_map_1.txt, portal_ui_map_2.txt, ... hasta portal_ui_map_5.txt
+- La escritura de DebugLog se realiza en segundo plano para reducir el riesgo de bloquear la interfaz.
+- La ruta prevista es la raíz de Descargas (Download), no una subcarpeta HRC-logs.
+
+ARCHIVOS PRINCIPALES MODIFICADOS
+- app/src/main/java/com/tws/portalpaciente/app/util/DownloadsLogWriter.kt
+- app/src/main/java/com/tws/portalpaciente/app/web/DebugLog.kt
+- app/src/main/java/com/tws/portalpaciente/app/MainActivity.kt
+- app/src/main/java/com/tws/portalpaciente/app/web/PortalRoutes.kt
+- app/src/main/java/com/tws/portalpaciente/app/util/PortalUiMapLogger.kt
+
+COMMITS RECIENTES
+- Generación de state UUID para login: 985c91cecc37c79967592da2cbfe5963d857208b
+- Uso de la URL de login generada en MainActivity: 8d768fc113ea0de1b4e683893164e408b10b02bc
+
+ESTADO DE VERIFICACIÓN
+- Una ejecución anterior de Android CI terminó correctamente, pero corresponde a una revisión previa de estos últimos cambios.
+- No está confirmado que los commits más recientes hayan completado una compilación de CI.
+- El APK actualizado todavía debe instalarse y probarse en el teléfono.
+- Falta comprobar que la URL final de login contenga state, que el portal acepte ese flujo y que la pantalla deje de quedar en blanco.
+- Falta verificar en el dispositivo que ambos tipos de TXT aparezcan en Descargas, que reciban datos útiles y que roten correctamente entre las partes numeradas.
+- También falta comprobar si los cambios mejoran el problema de desaparición progresiva de los datos de Inicio.
+
+PRÓXIMOS PASOS
+1. Confirmar que la última revisión de la rama compile.
+2. Generar e instalar el APK actualizado.
+3. Abrir la app y comprobar que el primer acceso a /login incluye un state UUID nuevo.
+4. Confirmar que la pantalla de login se renderiza y que el servidor continúa el flujo sin errores.
+5. Revisar los archivos portal_debug_*.txt y portal_ui_map_*.txt en Descargas.
+6. Usar esos registros para localizar la causa restante antes de hacer cambios adicionales.
+
+IMPORTANTE
+Los cambios de código para guardar logs y generar state ya están en la rama, pero todavía no se debe dar por confirmado que funcionan en el teléfono hasta probar el APK actualizado en el dispositivo.

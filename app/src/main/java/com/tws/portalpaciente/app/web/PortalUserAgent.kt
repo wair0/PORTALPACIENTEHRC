@@ -13,7 +13,6 @@ import androidx.webkit.WebViewFeature
 import com.tws.portalpaciente.app.util.FileLogger
 
 object PortalUserAgent {
-
     private const val TAG = "PortalUA"
     private const val FALLBACK_MAJOR = 130
     var diagnostics = true
@@ -23,14 +22,11 @@ object PortalUserAgent {
             val ctx = context.applicationContext
             val major = webViewMajorVersion()
             val ua = buildUserAgent(major)
-
             webView.settings.userAgentString = ua
             FileLogger.log(ctx, TAG, "UA set to: $ua (major=$major)")
-
             applyRequestedWithAllowList(webView.settings, ctx)
             applyUserAgentMetadata(webView.settings, major, ctx)
-            injectDocumentStartScripts(ctx, webView, major)
-
+            injectCompatibilityScripts(ctx, webView, major)
             Log.d(TAG, "UA aplicado: $ua")
             FileLogger.log(ctx, TAG, "apply() completed successfully")
         } catch (e: Exception) {
@@ -45,8 +41,8 @@ object PortalUserAgent {
 
     fun webViewMajorVersion(): Int {
         if (Build.VERSION.SDK_INT >= 26) {
-            val v = runCatching { WebView.getCurrentWebViewPackage()?.versionName }.getOrNull()
-            val major = v?.substringBefore('.')?.toIntOrNull()
+            val version = runCatching { WebView.getCurrentWebViewPackage()?.versionName }.getOrNull()
+            val major = version?.substringBefore('.')?.toIntOrNull()
             if (major != null && major > 0) return major
         }
         return FALLBACK_MAJOR
@@ -57,9 +53,7 @@ object PortalUserAgent {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST)) {
                 WebSettingsCompat.setRequestedWithHeaderOriginAllowList(settings, emptySet())
                 FileLogger.log(ctx, TAG, "X-Requested-With allow list cleared")
-            } else {
-                FileLogger.log(ctx, TAG, "REQUESTED_WITH_HEADER_ALLOW_LIST not supported")
-            }
+            } else FileLogger.log(ctx, TAG, "REQUESTED_WITH_HEADER_ALLOW_LIST not supported")
         } catch (e: Exception) {
             FileLogger.log(ctx, TAG, "Error clearing X-Requested-With: ${e.message}")
         }
@@ -95,39 +89,33 @@ object PortalUserAgent {
         }
     }
 
-    private fun injectDocumentStartScripts(ctx: Context, webView: WebView, major: Int) {
+    /**
+     * Conservamos solo las compatibilidades que ya usa el login. No inyectamos CSS,
+     * clasificadores visuales ni scripts de diagnóstico en document-start.
+     */
+    private fun injectCompatibilityScripts(ctx: Context, webView: WebView, major: Int) {
         try {
             if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-                FileLogger.log(ctx, TAG, "DOCUMENT_START_SCRIPT not supported")
+                FileLogger.log(ctx, TAG, "DOCUMENT_START_SCRIPT no soportado; se omiten scripts tempranos")
                 return
             }
-
-            // Probe primero
-            val probe = try {
-                ctx.assets.open("js/portal-probe.js").bufferedReader().use { it.readText() }
-            } catch (e: Exception) { "" }
-            if (probe.isNotEmpty()) {
-                WebViewCompat.addDocumentStartJavaScript(webView, probe, setOf(PortalRoutes.BASE))
-                FileLogger.log(ctx, TAG, "portal-probe.js injected")
+            val origin = setOf(PortalRoutes.BASE)
+            fun asset(name: String): String = try {
+                ctx.assets.open(name).bufferedReader().use { it.readText() }
+            } catch (e: Exception) {
+                FileLogger.log(ctx, TAG, "Could not read $name: ${e.message}")
+                ""
             }
 
-            // TTS polyfill
-            val tts = try {
-                ctx.assets.open("js/tts-polyfill.js").bufferedReader().use { it.readText() }
-            } catch (e: Exception) { "" }
-            if (tts.isNotEmpty()) {
-                WebViewCompat.addDocumentStartJavaScript(webView, tts, setOf(PortalRoutes.BASE))
-                FileLogger.log(ctx, TAG, "tts-polyfill.js injected")
-            }
+            val tts = asset("js/tts-polyfill.js")
+            if (tts.isNotEmpty()) WebViewCompat.addDocumentStartJavaScript(webView, tts, origin)
 
-            // ua-compat
-            val ua = ctx.assets.open("js/ua-compat.js").bufferedReader().use { it.readText() }
+            val uaCompat = asset("js/ua-compat.js")
                 .replace("__CHROME_MAJOR__", major.toString())
                 .replace("__DIAGNOSTICS__", diagnostics.toString())
-            WebViewCompat.addDocumentStartJavaScript(webView, ua, setOf(PortalRoutes.BASE))
-            FileLogger.log(ctx, TAG, "ua-compat.js injected")
+            if (uaCompat.isNotEmpty()) WebViewCompat.addDocumentStartJavaScript(webView, uaCompat, origin)
         } catch (e: Exception) {
-            FileLogger.log(ctx, TAG, "Error injecting scripts: ${e.message}")
+            FileLogger.log(ctx, TAG, "Error injecting compatibility scripts: ${e.message}")
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.tws.portalpaciente.app.web
 
 import android.net.Uri
+import java.util.UUID
 
 enum class PortalRoute(val title: String) {
     LOGIN("Ingresar"),
@@ -17,6 +18,12 @@ object PortalRoutes {
     const val DASHBOARD = "$BASE/patients/dashboard"
     const val EXAMS = "$BASE/patients/exams"
     const val PROFILE = "$BASE/patients/profile"
+
+    /**
+     * Starts a fresh login flow with a unique state value.
+     * The portal/server must still validate and accept this flow.
+     */
+    fun newLoginUrl(): String = "$LOGIN?state=${UUID.randomUUID()}"
 
     fun isPortal(uri: Uri): Boolean = uri.scheme == "https" && uri.host == HOST
 
