@@ -38,10 +38,12 @@ class PortalViewModel : ViewModel() {
 
     fun onError(message: String) = _uiState.update { it.copy(loading = false, error = message) }
 
-    fun onProfile(name: String, photo: String, unread: Int) {
-        _uiState.update {
-            it.copy(profile = ProfileInfo(name, photo), unread = unread)
-        }
+    fun onProfile(info: ProfileInfo) {
+        _uiState.update { it.copy(profile = info) }
+    }
+
+    fun onUnread(count: Int) {
+        _uiState.update { it.copy(unread = count.coerceIn(0, 99)) }
     }
 
     fun requestLogout() = _uiState.update { it.copy(pendingLogout = true) }
