@@ -62,7 +62,6 @@ class MainActivity : AppCompatActivity() {
     private var badge: BadgeDrawable? = null
     private var badgeAttached = false
     private var syncingBottomNav = false
-    private var loaderTimeoutPosted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,7 +74,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Avisar si el WebView del sistema es viejo
         WebViewVersionHelper.checkAndPrompt(this)
 
         setSupportActionBar(binding.toolbar)
@@ -90,12 +88,6 @@ class MainActivity : AppCompatActivity() {
         setupBottomNav()
         observeState()
 
-        binding.openInChromeButton.setOnClickListener {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(PortalRoutes.LOGIN))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(intent)
-        }
-
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
@@ -109,18 +101,7 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             binding.webView.loadUrl(PortalRoutes.LOGIN)
-            scheduleLoaderTimeout()
         }
-    }
-
-    private fun scheduleLoaderTimeout() {
-        if (loaderTimeoutPosted) return
-        loaderTimeoutPosted = true
-        handler.postDelayed({
-            if (viewModel.uiState.value.route == PortalRoute.LOGIN || !viewModel.uiState.value.loggedIn) {
-                binding.openInChromeButton.isVisible = true
-            }
-        }, 8000)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -131,13 +112,16 @@ class MainActivity : AppCompatActivity() {
 
         WebView.setWebContentsDebuggingEnabled(true)
 
+        // User-Agent de Chrome móvil real y reciente (sin referencias a WebView)
+        val chromeUa = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.135 Mobile Safari/537.36"
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+            userAgentString = chromeUa
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             mediaPlaybackRequiresUserGesture = false
@@ -243,10 +227,6 @@ class MainActivity : AppCompatActivity() {
         binding.drawer.setDrawerLockMode(
             if (isLogin) DrawerLayout.LOCK_MODE_LOCKED_CLOSED else DrawerLayout.LOCK_MODE_UNLOCKED
         )
-
-        if (!isLogin) {
-            binding.openInChromeButton.isVisible = false
-        }
 
         binding.progressBar.isVisible = state.loading && !isLogin
         binding.errorBanner.isVisible = state.error != null
