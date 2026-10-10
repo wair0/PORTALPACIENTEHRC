@@ -19,8 +19,8 @@ Fase 1 - Base (HECHA)
   - AndroidManifest.xml
   Estado: compilable en estructura
 
-Fase 2 - Fuentes Kotlin
-  - MainActivity.kt
+Fase 2 - Fuentes Kotlin (HECHA)
+  - MainActivity.kt (completo)
   - ui/PortalViewModel.kt
   - web/PortalWebViewClient.kt
   - web/PortalInjector.kt
@@ -30,7 +30,7 @@ Fase 2 - Fuentes Kotlin
   - data/ProfileInfo.kt
   Continuidad: la app ya tiene la lógica de navegación y estado.
 
-Fase 3 - Recursos
+Fase 3 - Recursos (HECHA)
   - res/layout/activity_main.xml
   - res/layout/nav_header.xml
   - res/menu/bottom_menu.xml, drawer_menu.xml, menu_toolbar.xml
@@ -69,4 +69,4 @@ REGLAS DE CONTINUIDAD
 
 PRÓXIMO PASO
 ------------
-Continuar con Fase 2 (subir fuentes Kotlin restantes).
+Continuar con Fase 4 (assets CSS y JS para tema).
