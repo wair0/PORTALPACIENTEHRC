@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Portal Paciente HRC</string>
     <string name="open_menu">Abrir menú</string>
+    <string name="brand_subtitle">Digital Health Experience</string>
 </resources>
