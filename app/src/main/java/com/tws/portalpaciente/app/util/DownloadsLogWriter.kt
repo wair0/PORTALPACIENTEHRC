@@ -37,21 +37,23 @@ object DownloadsLogWriter {
     }
 
     @Synchronized
-    fun append(context: Context, baseName: String, text: String) {
-        if (text.isEmpty()) return
+    fun append(context: Context, baseName: String, text: String): Boolean {
+        if (text.isEmpty()) return true
         val app = context.applicationContext
-        try {
+        return try {
             var offset = 0
             while (offset < text.length) {
                 val end = (offset + CHUNK_CHARS).coerceAtMost(text.length)
                 if (!appendChunk(app, baseName, text.substring(offset, end))) {
                     Log.e(TAG, "No se pudo guardar $baseName en Descargas")
-                    return
+                    return false
                 }
                 offset = end
             }
+            true
         } catch (e: Exception) {
             Log.e(TAG, "Error guardando $baseName en Descargas", e)
+            false
         }
     }
 
