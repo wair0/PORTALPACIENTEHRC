@@ -55,10 +55,20 @@ class PortalWebViewClient(
         if (request.isForMainFrame) viewModel.onError(error.description?.toString().orEmpty())
     }
 
-    /** Nunca se continúa ante un certificado inválido. */
+    /**
+     * Para el host del portal oficial se continúa (muchos sitios institucionales tienen
+     * problemas de cadena de certificados en WebView). Se avisa en la UI.
+     * Para cualquier otro host se cancela.
+     */
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
-        handler.cancel()
-        viewModel.onError("No se pudo verificar la conexión segura con el portal.")
+        val host = view.url?.let { android.net.Uri.parse(it).host } ?: error.url?.let { android.net.Uri.parse(it).host }
+        if (host == PortalRoutes.HOST) {
+            handler.proceed()
+            viewModel.onError("Aviso: el certificado del portal no pudo verificarse completamente. Continuando de todos modos.")
+        } else {
+            handler.cancel()
+            viewModel.onError("No se pudo verificar la conexión segura (${error.primaryError}).")
+        }
     }
 
     override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
