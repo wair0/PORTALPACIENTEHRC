@@ -66,6 +66,9 @@ class MainActivity : AppCompatActivity() {
     private var badgeAttached = false
     private var syncingBottomNav = false
 
+    // true = cargar via iframe local para prueba
+    private val useIframe = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FileLogger.log(this, "MainActivity", "onCreate started")
@@ -106,8 +109,13 @@ class MainActivity : AppCompatActivity() {
         })
 
         if (savedInstanceState == null) {
-            FileLogger.log(this, "MainActivity", "loading LOGIN url")
-            binding.webView.loadUrl(PortalRoutes.LOGIN)
+            if (useIframe) {
+                FileLogger.log(this, "MainActivity", "loading iframe.html")
+                binding.webView.loadUrl("file:///android_asset/iframe.html")
+            } else {
+                FileLogger.log(this, "MainActivity", "loading LOGIN url")
+                binding.webView.loadUrl(PortalRoutes.LOGIN)
+            }
         }
     }
 
