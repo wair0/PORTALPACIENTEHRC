@@ -60,10 +60,9 @@
     nodes=nodes.slice(0,450);
     var elements=nodes.map(function(el){
       var attrs={};
-      ['role','type','name','placeholder','for','data-testid'].forEach(function(key){
+      ['role','type','name','placeholder','for','data-testid','aria-expanded','aria-hidden'].forEach(function(key){
         var v=el.getAttribute(key); if(v)attrs[key]=short(v,100);
       });
-      // Nunca leer input.value, texto de párrafos, nombres ni contenido de tarjetas.
       return {tag:el.tagName.toLowerCase(),id:short(el.id,100),
         className:short(typeof el.className==='string'?el.className:'',180),
         attrs:attrs,semanticTextLength:semanticTextLength(el),style:styleOf(el)};
@@ -71,7 +70,7 @@
     var rootComputed=getComputedStyle(document.documentElement),vars={};
     for(var i=0;i<rootComputed.length;i++){var prop=rootComputed[i];if(prop.indexOf('--')===0)vars[prop]=short(rootComputed.getPropertyValue(prop),100);}
     var report={
-      kind:'portal-ui-map',schema:2,capturedAt:new Date().toISOString(),reason:reason,
+      kind:'portal-ui-map',schema:3,capturedAt:new Date().toISOString(),reason:reason,
       url:cleanUrl(location.href),title:short(document.title,120),readyState:document.readyState,
       viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},
       document:{htmlClass:short(document.documentElement.className,180),bodyClass:short(document.body.className,180),
@@ -79,8 +78,10 @@
       frontend:frameworkHints(),visibleElementCount:nodes.length,elements:elements,
       privacy:'No se guardaron valores de campos, texto real de etiquetas, párrafos ni contenido clínico/personal.'
     };
-    var signature=path+'|'+document.title+'|'+nodes.length+'|'+
-      Array.from(document.querySelectorAll('h1,h2,h3,button,[role="tab"],nav a')).map(function(e){return e.tagName+':'+semanticTextLength(e);}).join('|');
+    var signature=path+'|'+document.title+'|'+nodes.length+'|'+nodes.slice(0,180).map(function(e){
+      return e.tagName+':'+short(e.id,30)+':'+short(typeof e.className==='string'?e.className:'',60)+
+        ':'+e.getAttribute('aria-expanded')+':'+e.getAttribute('hidden');
+    }).join('|');
     if(sentRoutes[routeKey]===signature)return;
     sentRoutes[routeKey]=signature;
     try{window.HRCBridge.saveUiMap(JSON.stringify(report));}catch(_){}
@@ -88,8 +89,9 @@
   function schedule(reason){if(timer)clearTimeout(timer);timer=setTimeout(function(){buildMap(reason||'DOM estable');},1800);}
   function start(){
     schedule('carga inicial');
-    var observer=new MutationObserver(function(){schedule('cambio DOM / SPA');});
-    observer.observe(document.documentElement,{childList:true,subtree:true});
+    var observer=new MutationObserver(function(){schedule('cambio DOM/estilo/menú SPA');});
+    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,
+      attributeFilter:['class','style','hidden','aria-expanded','aria-hidden','role']});
     var lastPath=location.pathname;
     setInterval(function(){if(location.pathname!==lastPath){lastPath=location.pathname;schedule('cambio de ruta SPA');}},1000);
     setTimeout(function(){buildMap('segunda captura estable');},6500);
