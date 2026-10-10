@@ -8,11 +8,9 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import java.io.File
-import java.io.IOException
 
 /**
- * Escribe logs de diagnóstico en Descargas y los rota en un máximo de cinco TXT.
- * Cada parte se mantiene por debajo de PART_LIMIT_BYTES aproximadamente.
+ * Escribe logs de diagnóstico en Descargas/HRC-logs y los divide en un máximo de cinco TXT.
  */
 object DownloadsLogWriter {
     private const val TAG = "DownloadsLogWriter"
@@ -20,6 +18,20 @@ object DownloadsLogWriter {
     private const val PART_LIMIT_BYTES = 350 * 1024
     private const val CHUNK_CHARS = 48 * 1024
     private const val DIRECTORY = "HRC-logs"
+    @Volatile private var appContext: Context? = null
+
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    fun appendFromApplicationContext(baseName: String, text: String) {
+        val context = appContext
+        if (context == null) {
+            Log.e(TAG, "Logger no inicializado; se descarta escritura de $baseName")
+            return
+        }
+        append(context, baseName, text)
+    }
 
     @Synchronized
     fun append(context: Context, baseName: String, text: String) {
@@ -29,30 +41,32 @@ object DownloadsLogWriter {
             var offset = 0
             while (offset < text.length) {
                 val end = (offset + CHUNK_CHARS).coerceAtMost(text.length)
-                val chunk = text.substring(offset, end)
-                if (!appendChunk(app, baseName, chunk)) {
-                    Log.e(TAG, "No se pudo guardar $baseName en Descargas/HRC-logs; parte o almacenamiento no disponible")
+                if (!appendChunk(app, baseName, text.substring(offset, end))) {
+                    Log.e(TAG, "No se pudo guardar $baseName en Descargas/$DIRECTORY")
                     return
                 }
                 offset = end
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error guardando $baseName en Descargas/HRC-logs", e)
+            Log.e(TAG, "Error guardando $baseName en Descargas/$DIRECTORY", e)
         }
     }
 
     private fun appendChunk(context: Context, baseName: String, chunk: String): Boolean {
+        val bytes = chunk.toByteArray(Charsets.UTF_8).size
         for (part in 1..PARTS) {
             val name = "${baseName}_${part}.txt"
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val found = findMediaStoreFile(context, name)
-                val uri = found?.first ?: createMediaStoreFile(context, name) ?: return false
-                val currentSize = found?.second ?: 0L
-                if (currentSize >= PART_LIMIT_BYTES && part < PARTS) continue
-                if (currentSize + chunk.toByteArray(Charsets.UTF_8).size > PART_LIMIT_BYTES &&
-                    currentSize > 0L && part < PARTS) continue
+                var found = findMediaStoreFile(context, name)
+                if (found == null) {
+                    val created = createMediaStoreFile(context, name) ?: return false
+                    found = created to 0L
+                }
+                val (uri, size) = found
+                if (size >= PART_LIMIT_BYTES && part < PARTS) continue
+                if (size > 0L && size + bytes > PART_LIMIT_BYTES && part < PARTS) continue
                 val output = context.contentResolver.openOutputStream(uri, "wa") ?: return false
-                output.bufferedWriter(Charsets.UTF_8).use { it.write(chunk); it.flush() }
+                output.bufferedWriter(Charsets.UTF_8).use { it.write(chunk) }
                 return true
             } else {
                 val dir = File(
@@ -61,28 +75,26 @@ object DownloadsLogWriter {
                 )
                 if (!dir.exists() && !dir.mkdirs()) return false
                 val file = File(dir, name)
-                if (file.exists() && file.length() >= PART_LIMIT_BYTES && part < PARTS) continue
-                val bytes = chunk.toByteArray(Charsets.UTF_8).size
-                if (file.exists() && file.length() + bytes > PART_LIMIT_BYTES &&
-                    file.length() > 0L && part < PARTS) continue
+                val size = if (file.exists()) file.length() else 0L
+                if (size >= PART_LIMIT_BYTES && part < PARTS) continue
+                if (size > 0L && size + bytes > PART_LIMIT_BYTES && part < PARTS) continue
                 file.appendText(chunk, Charsets.UTF_8)
                 return true
             }
         }
-        // El quinto archivo actúa como último segmento y puede crecer si se agota la rotación.
+        // Si las primeras cuatro partes se llenan, la quinta conserva el resto del log.
         val name = "${baseName}_${PARTS}.txt"
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val found = findMediaStoreFile(context, name)
             val uri = found?.first ?: createMediaStoreFile(context, name) ?: return false
-            val output = context.contentResolver.openOutputStream(uri, "wa") ?: return false
-            output.bufferedWriter(Charsets.UTF_8).use { it.write(chunk); it.flush() }
-            true
+            context.contentResolver.openOutputStream(uri, "wa")?.bufferedWriter(Charsets.UTF_8)?.use { it.write(chunk) }
+                ?: return false
         } else {
             val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), DIRECTORY)
             if (!dir.exists() && !dir.mkdirs()) return false
             File(dir, name).appendText(chunk, Charsets.UTF_8)
-            true
         }
+        return true
     }
 
     private fun findMediaStoreFile(context: Context, name: String): Pair<Uri, Long>? {
@@ -97,8 +109,8 @@ object DownloadsLogWriter {
         )?.use { cursor ->
             if (cursor.moveToFirst()) {
                 val uri = android.content.ContentUris.withAppendedId(collection, cursor.getLong(0))
-                val sizeIndex = cursor.getColumnIndex(MediaStore.Downloads.SIZE)
-                val size = if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) cursor.getLong(sizeIndex) else 0L
+                val index = cursor.getColumnIndex(MediaStore.Downloads.SIZE)
+                val size = if (index >= 0 && !cursor.isNull(index)) cursor.getLong(index) else 0L
                 return uri to size
             }
         }
