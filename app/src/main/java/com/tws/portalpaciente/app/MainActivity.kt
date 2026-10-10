@@ -3,7 +3,6 @@ package com.tws.portalpaciente.app
 import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
@@ -28,7 +27,6 @@ import com.tws.portalpaciente.app.data.SessionManager
 import com.tws.portalpaciente.app.databinding.ActivityMainBinding
 import com.tws.portalpaciente.app.ui.PortalViewModel
 import com.tws.portalpaciente.app.ui.UiState
-import com.tws.portalpaciente.app.util.FileLogger
 import com.tws.portalpaciente.app.web.DebugLog
 import com.tws.portalpaciente.app.web.PortalJsBridge
 import com.tws.portalpaciente.app.web.PortalRoutes
@@ -48,17 +46,13 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         WebViewVersionHelper.checkAndPrompt(this)
-
         setupWebView()
-        setupDebugPanel()
         observeState()
-
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (binding.webView.canGoBack()) binding.webView.goBack() else finish()
             }
         })
-
         if (savedInstanceState == null) binding.webView.loadUrl(PortalRoutes.LOGIN)
     }
 
@@ -69,7 +63,6 @@ class MainActivity : AppCompatActivity() {
         CookieManager.getInstance().flush()
         WebView.setWebContentsDebuggingEnabled(true)
         webView.setBackgroundColor(android.graphics.Color.WHITE)
-
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -83,13 +76,11 @@ class MainActivity : AppCompatActivity() {
                 WebSettingsCompat.setForceDark(this, WebSettingsCompat.FORCE_DARK_OFF)
             }
         }
-
         PortalUserAgent.apply(this, webView)
         val uiMapScript = runCatching {
             assets.open("js/ui-map.js").bufferedReader().use { it.readText() }
         }.getOrDefault("")
-
-        // Sin CSS propio, sin enhancer visual, sin header/barra inferior nativos y sin forced reflow.
+        // Sin CSS propio, sin enhancer visual, sin header/barra inferior ni scripts de forced reflow.
         webView.webViewClient = PortalWebViewClient(this, viewModel, uiMapScript)
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
@@ -100,7 +91,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webView.addJavascriptInterface(PortalJsBridge(viewModel, this), "HRCBridge")
-
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             if (url.startsWith("data:")) {
                 handleDataUrlDownload(url, contentDisposition, mimeType)
@@ -131,20 +121,6 @@ class MainActivity : AppCompatActivity() {
         }.onFailure { DebugLog.add("Download", "Error al procesar data URL: ${it.message}") }
     }
 
-    private fun setupDebugPanel() {
-        binding.debugFab.setOnClickListener {
-            binding.debugText.text = DebugLog.dump()
-            binding.debugPanel.isVisible = true
-        }
-        binding.debugClose.setOnClickListener { binding.debugPanel.isVisible = false }
-        binding.debugRefresh.setOnClickListener { binding.debugText.text = DebugLog.dump() }
-        binding.debugCopy.setOnClickListener {
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("log", DebugLog.dump()))
-            android.widget.Toast.makeText(this, "Registro copiado", android.widget.Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun observeState() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -154,7 +130,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUi(state: UiState) {
-        binding.progressBar.isVisible = state.loading
         binding.errorBanner.isVisible = state.error != null
         binding.errorText.text = state.error
         binding.retryButton.setOnClickListener { binding.webView.reload() }
