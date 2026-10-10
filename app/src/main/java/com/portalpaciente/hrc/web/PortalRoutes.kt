@@ -12,9 +12,9 @@ enum class PortalRoute(val title: String) {
 }
 
 /**
- * Rutas del portal oficial. IMPORTANTE: el login se carga SIEMPRE sin parámetro `state`.
- * El servidor lo genera en cada carga (redirección) y la WebView la sigue sola; nunca se
- * guarda ni se reutiliza un `state` viejo.
+ * Rutas del portal oficial.
+ * El login se carga sin `state`; el servidor redirige a `/login?state=uuid`.
+ * La WebView debe seguir esa redirección (no se guarda el state).
  */
 object PortalRoutes {
     const val HOST = "tws.sanluis.gob.ar"
