@@ -1,267 +1,134 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/drawer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:background="@android:color/white">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/background">
+    <!-- La vista oficial ocupa toda la pantalla: no hay cabecera ni barra inferior propias. -->
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <LinearLayout
-            android:id="@+id/toolbar"
-            android:layout_width="0dp"
-            android:layout_height="64dp"
-            android:background="@drawable/bg_toolbar"
-            android:elevation="8dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="3dp"
+        android:indeterminate="true"
+        android:indeterminateTint="#1676B8"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-            <ImageButton
-                android:id="@+id/btnMenu"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/bg_icon_btn"
-                android:contentDescription="@string/open_menu"
-                android:src="@drawable/ic_menu" />
-
-            <TextView
-                android:id="@+id/logoMark"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_logo_mark"
-                android:gravity="center"
-                android:text="HRC"
-                android:textColor="@android:color/white"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/headerTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="Portal Paciente"
-                    android:textColor="@android:color/white"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:letterSpacing="0.10"
-                    android:maxLines="1"
-                    android:text="@string/brand_subtitle"
-                    android:textAllCaps="true"
-                    android:textColor="#9CE3FF"
-                    android:textSize="8sp" />
-            </LinearLayout>
-
-            <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp">
-
-                <ImageButton
-                    android:id="@+id/btnBell"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center"
-                    android:background="@drawable/bg_icon_btn"
-                    android:contentDescription="Notificaciones"
-                    android:src="@drawable/ic_bell" />
-
-                <TextView
-                    android:id="@+id/bellBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="18dp"
-                    android:layout_gravity="top|end"
-                    android:background="@drawable/bg_badge"
-                    android:gravity="center"
-                    android:minWidth="18dp"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
-                    android:textColor="#04202F"
-                    android:textSize="9sp"
-                    android:textStyle="bold"
-                    android:visibility="gone" />
-            </FrameLayout>
-
-            <ImageButton
-                android:id="@+id/btnRefresh"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_marginStart="2dp"
-                android:background="@drawable/bg_icon_btn"
-                android:contentDescription="Actualizar"
-                android:src="@drawable/ic_refresh" />
-        </LinearLayout>
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="0dp"
-            android:layout_height="4dp"
-            android:indeterminate="true"
-            android:indeterminateTint="@color/accent"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/toolbar" />
-
-        <WebView
-            android:id="@+id/webView"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@color/background"
-            app:layout_constraintBottom_toTopOf="@id/bottomNav"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/progressBar" />
-
-        <LinearLayout
-            android:id="@+id/errorBanner"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:background="#D32F2F"
-            android:elevation="10dp"
-            android:orientation="horizontal"
-            android:padding="12dp"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/toolbar">
-
-            <TextView
-                android:id="@+id/errorText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="@android:color/white"
-                android:textSize="14sp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/retryButton"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Reintentar"
-                android:textColor="@android:color/white" />
-        </LinearLayout>
-
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottomNav"
-            style="@style/Widget.HRC.BottomNav"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            app:itemIconTint="@color/nav_item"
-            app:itemTextColor="@color/nav_item"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:menu="@menu/bottom_menu" />
+    <LinearLayout
+        android:id="@+id/errorBanner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#D32F2F"
+        android:elevation="10dp"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
-            android:id="@+id/debugFab"
+            android:id="@+id/errorText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/retryButton"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            android:alpha="0.65"
-            android:background="#99073B5C"
-            android:elevation="12dp"
-            android:padding="10dp"
-            android:text="🐞"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toTopOf="@id/bottomNav"
-            app:layout_constraintEnd_toEndOf="parent" />
+            android:text="Reintentar"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/debugFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:alpha="0.65"
+        android:background="#99000000"
+        android:elevation="12dp"
+        android:padding="10dp"
+        android:text="🐞"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/debugPanel"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#F2000000"
+        android:elevation="16dp"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
-            android:id="@+id/debugPanel"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="#F2000000"
-            android:elevation="16dp"
-            android:orientation="vertical"
-            android:padding="8dp"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/debugCopy"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_weight="1"
+                android:text="Copiar" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/debugCopy"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Copiar" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/debugRefresh"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Actualizar" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/debugRefresh"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Actualizar" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/debugClose"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Cerrar" />
-            </LinearLayout>
-
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1">
-
-                <TextView
-                    android:id="@+id/debugText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
-                    android:padding="8dp"
-                    android:textColor="#B9F6CA"
-                    android:textIsSelectable="true"
-                    android:textSize="11sp" />
-            </ScrollView>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/debugClose"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Cerrar" />
         </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-    <com.google.android.material.navigation.NavigationView
-        android:id="@+id/navView"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:background="@color/surface"
-        app:itemIconTint="@color/nav_item"
-        app:itemTextColor="@color/nav_item"
-        app:headerLayout="@layout/nav_header"
-        app:menu="@menu/drawer_menu" />
-
-</androidx.drawerlayout.widget.DrawerLayout>
+            <TextView
+                android:id="@+id/debugText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:padding="8dp"
+                android:textColor="#B9F6CA"
+                android:textIsSelectable="true"
+                android:textSize="11sp" />
+        </ScrollView>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
