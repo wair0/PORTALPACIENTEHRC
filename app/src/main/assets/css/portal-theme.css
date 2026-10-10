@@ -1,82 +1,25 @@
-/* Portal Paciente HRC – tema v5 reforzado */
+/* Portal Paciente HRC – tema v6 "High-Tech Corporativo · Utopía futurista" (médico)
+   Un solo lenguaje visual: enhancer.js marca cada bloque del portal según su aspecto original
+   (data-hrc = card | inner | wrap | chip | btn | btn-primary | keep) y este CSS lo re-estilea.
+   Todo lo no marcado pierde fondos/sombras del portal, así no se mezclan estilos. */
 :root{--bg:#F3F8FB;--bg2:#DCEEF8;--ink:#102A43;--muted:#5B7389;--blue:#0B6B9A;--navy:#073B5C;--accent:#20A4D8;--ok:#16805C;
---glass:rgba(255,255,255,.74);--line:rgba(32,164,216,.34);--shadow:0 10px 30px rgba(7,59,92,.10);--ease:cubic-bezier(.2,.8,.2,1);color-scheme:light}
+--glass:rgba(255,255,255,.78);--line:rgba(32,164,216,.34);--shadow:0 10px 30px rgba(7,59,92,.10);--ease:cubic-bezier(.2,.8,.2,1);color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#071A2B;--bg2:#0A2A44;--ink:#E6F1FA;--muted:#8FB0C8;--blue:#4FC3F7;--accent:#4FC3F7;--ok:#3DDC97;
---glass:rgba(12,35,56,.72);--line:rgba(79,195,247,.30);--shadow:0 12px 34px rgba(0,0,0,.35);color-scheme:dark}}
+--glass:rgba(12,35,56,.76);--line:rgba(79,195,247,.30);--shadow:0 12px 34px rgba(0,0,0,.35);color-scheme:dark}}
 
-html, body {
-  background: var(--bg) !important;
-  color: var(--ink) !important;
-  font-family: Roboto, "Segoe UI", system-ui, sans-serif !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
+html{background:var(--bg)!important;color:var(--ink);-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body{background:transparent!important;color:var(--ink);font-family:Roboto,"Segoe UI",system-ui,sans-serif!important}
 
-/* Ocultar headers y footers oficiales del portal de forma agresiva */
-header,
-.header,
-.navbar,
-.navbar-fixed-top,
-.site-header,
-.app-header,
-[class*="Header"],
-[class*="header"],
-[class*="Navbar"],
-[class*="TopBar"],
-[class*="AppBar"],
-footer,
-.footer,
-.site-footer,
-[class*="Footer"],
-[class*="BottomBar"],
-[class*="bottom-nav"],
-[data-hrc-hidden="1"] {
-  display: none !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  visibility: hidden !important;
-}
+/* Reset de estilos del portal no marcados */
+[data-hrc]{all:unset;display:revert;box-sizing:border-box}
+[data-hrc="card"]{background:var(--glass)!important;backdrop-filter:blur(10px);border:1px solid var(--line)!important;border-radius:16px!important;box-shadow:var(--shadow)!important;padding:16px!important;margin:8px 0!important}
+[data-hrc="btn"],[data-hrc="btn-primary"]{background:linear-gradient(180deg,var(--blue),var(--navy))!important;color:#fff!important;border:none!important;border-radius:10px!important;padding:10px 16px!important;font-weight:600!important}
+[data-hrc="chip"]{background:rgba(32,164,216,.12)!important;color:var(--blue)!important;border-radius:20px!important;padding:4px 10px!important;font-size:12px!important}
 
-/* Contenedores */
-#root, #__next, main, [role="main"] {
-  background: transparent !important;
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
+/* Ocultar header oficial */
+[data-hrc-hidden="1"],header,.navbar,.site-header,[class*="Header"],[class*="Navbar"]{display:none!important}
 
-/* Cards */
-.card, .panel, .box, [class*="Card"], [class*="card"] {
-  background: var(--glass) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--line) !important;
-  border-radius: 16px !important;
-  box-shadow: var(--shadow) !important;
-}
-
-/* Botones */
-button, .btn, input[type="submit"], input[type="button"] {
-  background: linear-gradient(180deg, var(--blue), var(--navy)) !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 10px !important;
-  padding: 10px 18px !important;
-  font-weight: 600 !important;
-}
-
-/* Inputs */
-input, select, textarea {
-  background: var(--glass) !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 10px !important;
-  color: var(--ink) !important;
-}
-
-/* Links */
-a { color: var(--blue) !important; }
-
-/* Forzar tipografía y colores en todo */
-* {
-  box-sizing: border-box;
-  font-family: inherit !important;
-}
+/* Ajustes generales */
+#root,#__next,main{background:transparent!important}
+input,select,textarea{background:var(--glass)!important;border:1px solid var(--line)!important;border-radius:8px!important;color:var(--ink)!important}
+a{color:var(--blue)!important}
