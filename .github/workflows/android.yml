@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, fix/aplicar-tema-visual-zip ]
   pull_request:
     branches: [ main ]
 
