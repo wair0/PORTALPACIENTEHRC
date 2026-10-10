@@ -39,8 +39,15 @@ class PortalWebViewClient(
     override fun onPageFinished(view: WebView, url: String?) {
         DebugLog.add("PAGE", "finish ${url?.substringBefore('?')}")
         // El mapa es de solo lectura y se inicia después de que el portal termine de cargar.
-        if (uiMapScript.isNotBlank() && url?.startsWith(PortalRoutes.BASE) == true) {
-            view.evaluateJavascript(uiMapScript, null)
+        if (uiMapScript.isBlank()) {
+            DebugLog.add("UI_MAP", "No se cargó assets/js/ui-map.js: el script está vacío")
+        } else if (url?.startsWith(PortalRoutes.BASE) == true) {
+            DebugLog.add("UI_MAP", "Inyectando mapa UI en la página del portal; script=${uiMapScript.length} caracteres")
+            view.evaluateJavascript(uiMapScript) { result ->
+                DebugLog.add("UI_MAP", "evaluateJavascript finalizó; resultado=${result ?: "null"}")
+            }
+        } else {
+            DebugLog.add("UI_MAP", "Se omite mapa UI para URL fuera del portal")
         }
         viewModel.onPageFinished(url)
     }
