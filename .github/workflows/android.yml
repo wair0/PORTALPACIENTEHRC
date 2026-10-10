@@ -31,9 +31,14 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
+      - name: Rename APK
+        run: |
+          cd app/build/outputs/apk/debug
+          mv app-debug.apk PORTALPACIENTEHRC.apk || true
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: PORTALPACIENTEHRC
+          path: app/build/outputs/apk/debug/PORTALPACIENTEHRC.apk
           retention-days: 7
