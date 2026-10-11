@@ -1,18 +1,24 @@
-/* Portal Paciente HRC – UI offline. Estilo High-Tech Corporativo. */
+/* Portal Paciente HRC – UI offline. Header oculto en login (como el zip). */
 (function () {
   'use strict';
   var N = window.HRCNative || null;
   var $ = function (id) { return document.getElementById(id); };
 
   function go(id) {
+    var isLogin = id === 'login';
     ['login', 'home', 'exams', 'profile'].forEach(function (s) {
       var el = $(s);
       if (el) el.classList.toggle('on', s === id);
     });
+    var top = document.querySelector('header.top');
+    if (top) top.hidden = isLogin;
     var nav = $('nav');
-    if (nav) nav.classList.toggle('off', id === 'login');
+    if (nav) nav.classList.toggle('off', isLogin);
     var bell = $('bell');
-    if (bell) bell.hidden = id === 'login';
+    if (bell) bell.hidden = isLogin;
+    var menuBtn = $('menuBtn');
+    if (menuBtn) menuBtn.hidden = isLogin;
+    document.body.classList.toggle('is-login', isLogin);
     Array.prototype.forEach.call(document.querySelectorAll('.nav button'), function (b) {
       b.classList.toggle('on', b.getAttribute('data-go') === id);
     });
@@ -35,12 +41,8 @@
     var loginBtn = $('loginBtn');
     if (loginBtn) {
       loginBtn.addEventListener('click', function () {
-        if (N && N.login) {
-          N.login('', '');
-        } else {
-          toast('Modo demo');
-          go('home');
-        }
+        if (N && N.login) N.login('', '');
+        else { toast('Modo demo'); go('home'); }
       });
     }
     var logoutBtn = $('logoutBtn');
