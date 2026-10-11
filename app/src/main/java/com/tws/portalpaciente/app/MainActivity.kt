@@ -43,7 +43,6 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: PortalViewModel by viewModels()
     private val session = SessionManager()
 
-    // Para reensamblar chunks del mapa
     private val mapChunks = mutableMapOf<String, MutableMap<Int, String>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,10 +89,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
         PortalUserAgent.apply(this, webView)
+
         val uiMapScript = runCatching {
             assets.open("js/ui-map.js").bufferedReader().use { it.readText() }
         }.getOrDefault("")
-        webView.webViewClient = PortalWebViewClient(this, viewModel, uiMapScript)
+        val themeCss = runCatching {
+            assets.open("css/portal-theme.css").bufferedReader().use { it.readText() }
+        }.getOrDefault("")
+        val enhancerJs = runCatching {
+            assets.open("js/enhancer.js").bufferedReader().use { it.readText() }
+        }.getOrDefault("")
+
+        webView.webViewClient = PortalWebViewClient(this, viewModel, uiMapScript, themeCss, enhancerJs)
+
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
                 val msg = "${consoleMessage.messageLevel()}: ${consoleMessage.message()} -- ${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}"
@@ -141,7 +149,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleMapChunk(data: String) {
-        // formato: id:index:total:chunk
         val parts = data.split(":", limit = 4)
         if (parts.size < 4) {
             DebugLog.add("UI_MAP", "Chunk mal formado")
