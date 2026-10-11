@@ -57,31 +57,10 @@ class PortalWebViewClient(
         }
 
         if (url?.startsWith(PortalRoutes.BASE) == true) {
-            // Inyectar tema visual
-            if (themeCss.isNotBlank()) {
-                val cssJs = """
-                    (function(){
-                      var s = document.getElementById('hrc-theme');
-                      if(!s){
-                        s = document.createElement('style');
-                        s.id = 'hrc-theme';
-                        document.head.appendChild(s);
-                      }
-                      s.textContent = ${jsonString(themeCss)};
-                      console.log('[THEME] CSS inyectado');
-                    })();
-                """.trimIndent()
-                view.evaluateJavascript(cssJs) { }
-                DebugLog.add("THEME", "CSS del tema inyectado (${themeCss.length} chars)")
-            }
+            // Tema visual desactivado: se deja el estilo original del portal.
+            DebugLog.add("THEME", "Tema visual desactivado; se usa el estilo original del portal")
 
-            // Inyectar enhancer
-            if (enhancerJs.isNotBlank()) {
-                view.evaluateJavascript(enhancerJs) { }
-                DebugLog.add("THEME", "Enhancer inyectado (${enhancerJs.length} chars)")
-            }
-
-            // Inyectar mapa UI
+            // Inyectar mapa UI (diagnóstico)
             if (uiMapScript.isNotBlank()) {
                 DebugLog.add("UI_MAP", "Inyectando mapa UI; script=${uiMapScript.length} caracteres")
                 view.evaluateJavascript(uiMapScript) { result ->
@@ -91,16 +70,6 @@ class PortalWebViewClient(
         }
 
         viewModel.onPageFinished(url)
-    }
-
-    private fun jsonString(value: String): String {
-        val escaped = value
-            .replace("\\", "\\\\")
-            .replace("'", "\\'")
-            .replace("\n", "\\n")
-            .replace("\r", "")
-            .replace("</", "<\\/")
-        return "'$escaped'"
     }
 
     override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
