@@ -1,142 +1,74 @@
 package com.tws.portalpaciente.app
 
 import android.annotation.SuppressLint
-import android.app.DownloadManager
-import android.content.Context
-import android.net.Uri
 import android.os.Bundle
-import android.util.Base64
-import android.util.Log
-import android.view.WindowManager
-import android.webkit.ConsoleMessage
-import android.webkit.CookieManager
-import android.webkit.JsPromptResult
-import android.webkit.URLUtil
-import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.isVisible
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.tws.portalpaciente.app.data.SessionManager
-import com.tws.portalpaciente.app.databinding.ActivityMainBinding
-import com.tws.portalpaciente.app.ui.PortalViewModel
-import com.tws.portalpaciente.app.ui.UiState
-import com.tws.portalpaciente.app.web.PortalJsBridge
-import com.tws.portalpaciente.app.web.PortalRoutes
-import com.tws.portalpaciente.app.web.PortalUserAgent
-import com.tws.portalpaciente.app.web.PortalWebViewClient
-import com.tws.portalpaciente.app.web.WebViewVersionHelper
-import kotlinx.coroutines.launch
+import com.tws.portalpaciente.app.web.UiBridge
+import com.tws.portalpaciente.app.web.UiWebViewClient
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
-    private val viewModel: PortalViewModel by viewModels()
-    private val session = SessionManager()
+
+    lateinit var session: SessionManager
+        private set
+    private lateinit var web: WebView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        WebViewVersionHelper.checkAndPrompt(this)
+        session = SessionManager(this)
+
+        web = WebView(this)
+        setContentView(web)
+
         setupWebView()
-        observeState()
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (binding.webView.canGoBack()) binding.webView.goBack() else finish()
+                if (web.canGoBack()) web.goBack() else finish()
             }
         })
-        if (savedInstanceState == null) {
-            val loginUrl = PortalRoutes.newLoginUrl()
-            binding.webView.loadUrl(loginUrl)
-        }
+
+        web.loadUrl("file:///android_asset/index.html")
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
-        val webView = binding.webView
-        session.configureCookies(webView)
-        CookieManager.getInstance().flush()
-        webView.setBackgroundColor(android.graphics.Color.WHITE)
-        webView.settings.apply {
+        web.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            databaseEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
-            mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            javaScriptCanOpenWindowsAutomatically = true
-            setSupportMultipleWindows(false)
-            mediaPlaybackRequiresUserGesture = false
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
                 WebSettingsCompat.setForceDark(this, WebSettingsCompat.FORCE_DARK_OFF)
             }
         }
-        PortalUserAgent.apply(this, webView)
-
-        webView.webViewClient = PortalWebViewClient(this, viewModel, "", "", "")
-
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                return true
-            }
-
-            override fun onJsPrompt(
-                view: WebView?,
-                url: String?,
-                message: String?,
-                defaultValue: String?,
-                result: JsPromptResult?
-            ): Boolean {
-                return super.onJsPrompt(view, url, message, defaultValue, result)
-            }
-        }
-        webView.addJavascriptInterface(PortalJsBridge(viewModel, this), "HRCBridge")
-        webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
-            if (url.startsWith("data:")) {
-                handleDataUrlDownload(url, contentDisposition, mimeType)
-            } else {
-                runCatching {
-                    val request = DownloadManager.Request(Uri.parse(url))
-                    request.setMimeType(mimeType)
-                    request.addRequestHeader("User-Agent", userAgent)
-                    request.setDescription("Descargando...")
-                    request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType))
-                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    request.setDestinationInExternalPublicDir(
-                        android.os.Environment.DIRECTORY_DOWNLOADS,
-                        URLUtil.guessFileName(url, contentDisposition, mimeType)
-                    )
-                    (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
-                }
-            }
-        }
+        web.webViewClient = UiWebViewClient { Toast.makeText(this, "La vista se reinició", Toast.LENGTH_SHORT).show() }
+        web.addJavascriptInterface(UiBridge(this), "HRCNative")
     }
 
-    private fun handleDataUrlDownload(dataUrl: String, contentDisposition: String?, mimeType: String?) {
-        runCatching {
-            val base64 = dataUrl.substringAfter("base64,")
-            Base64.decode(base64, Base64.DEFAULT)
-        }
+    fun startLogin(dni: String, password: String) {
+        // Por ahora abre el login del portal con state=
+        val url = session.loginUrl()
+        // TODO: lanzar AuthActivity o WebView de login
+        Toast.makeText(this, "Login con state: ${url.substringAfter("state=")}", Toast.LENGTH_LONG).show()
     }
 
-    private fun observeState() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state -> updateUi(state) }
-            }
-        }
+    fun fetchData(kind: String) {
+        // TODO: llamar a PortalApi y emitir resultado a la UI
+        Toast.makeText(this, "Fetch $kind (endpoints vacíos)", Toast.LENGTH_SHORT).show()
     }
 
-    private fun updateUi(state: UiState) {
-        binding.errorBanner.isVisible = state.error != null
-        binding.errorText.text = state.error
-        binding.retryButton.setOnClickListener { binding.webView.reload() }
+    fun openExam(id: String) {
+        Toast.makeText(this, "Abrir estudio $id", Toast.LENGTH_SHORT).show()
+    }
+
+    fun logout() {
+        session.logout()
+        web.loadUrl("file:///android_asset/index.html")
     }
 }
