@@ -22,15 +22,27 @@ class PortalWebViewClient(
     private val enhancerJs: String
 ) : WebViewClient() {
 
+    private fun ensureState(view: WebView, url: String?): Boolean {
+        if (url.isNullOrBlank()) return false
+        val uri = Uri.parse(url)
+        if (!PortalRoutes.isPortal(uri)) return false
+        val path = uri.path.orEmpty()
+        if (!path.contains("/login")) return false
+        val state = uri.getQueryParameter("state")
+        if (state.isNullOrBlank()) {
+            val forced = PortalRoutes.newLoginUrl()
+            DebugLog.add("AUTH", "State faltante en $url → forzando $forced")
+            view.loadUrl(forced)
+            return true
+        }
+        DebugLog.add("AUTH", "Login con state presente: $state")
+        return false
+    }
+
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val uri = request.url
         if (PortalRoutes.isPortal(uri)) {
-            if (uri.path?.contains("/login") == true && uri.getQueryParameter("state").isNullOrBlank()) {
-                val forced = PortalRoutes.newLoginUrl()
-                DebugLog.add("AUTH", "Forzando state en login: ${forced.substringAfter("state=")}")
-                view.loadUrl(forced)
-                return true
-            }
+            if (ensureState(view, uri.toString())) return true
             return false
         }
         when (uri.scheme) {
@@ -43,6 +55,7 @@ class PortalWebViewClient(
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         DebugLog.add("PAGE", "start ${url?.substringBefore('?')}")
+        ensureState(view, url)
         viewModel.onPageStarted()
     }
 
@@ -57,10 +70,7 @@ class PortalWebViewClient(
         }
 
         if (url?.startsWith(PortalRoutes.BASE) == true) {
-            // Tema visual desactivado: se deja el estilo original del portal.
             DebugLog.add("THEME", "Tema visual desactivado; se usa el estilo original del portal")
-
-            // Inyectar mapa UI (diagnóstico)
             if (uiMapScript.isNotBlank()) {
                 DebugLog.add("UI_MAP", "Inyectando mapa UI; script=${uiMapScript.length} caracteres")
                 view.evaluateJavascript(uiMapScript) { result ->
@@ -74,6 +84,7 @@ class PortalWebViewClient(
 
     override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
         DebugLog.add("NAV", "history ${url?.substringBefore('?')}")
+        ensureState(view, url)
         viewModel.onPageFinished(url)
     }
 
