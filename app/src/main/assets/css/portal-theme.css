@@ -35,6 +35,12 @@ html body a svg,html body button svg,html body [role="button"] svg{fill:currentC
 #root .c-loader::after{content:"";position:fixed;left:50%;top:50%;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);border-right-color:var(--blue);box-shadow:0 0 22px rgba(32,164,216,.35);animation:hrc-spin 1.2s linear infinite;pointer-events:none}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:linear-gradient(var(--accent),var(--blue));border-radius:5px}
 #root{padding-bottom:env(safe-area-inset-bottom,0)}[data-hrc-hidden="1"]{display:none!important}
+
+/* Login: fondo limpio y formulario como card */
+html[data-hrc-route="login"] body{background:transparent!important}
+html[data-hrc-route="login"] form[data-hrc="card"]{max-width:420px;margin:40px auto!important;padding:28px!important}
+html[data-hrc-route="login"] button[data-hrc="btn-primary"]{width:100%!important;padding:14px!important;font-size:16px!important}
+
 @keyframes hrc-drift{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(3%,2%,0) scale(1.1)}}
 @keyframes hrc-flow{to{background-position:250% 0}}
 @keyframes hrc-rise{from{opacity:0;transform:translate3d(0,16px,0) scale(.985)}to{opacity:1;transform:none}}
