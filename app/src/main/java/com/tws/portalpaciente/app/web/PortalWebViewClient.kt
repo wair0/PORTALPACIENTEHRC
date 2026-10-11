@@ -31,11 +31,9 @@ class PortalWebViewClient(
         val state = uri.getQueryParameter("state")
         if (state.isNullOrBlank()) {
             val forced = PortalRoutes.newLoginUrl()
-            DebugLog.add("AUTH", "State faltante en $url → forzando $forced")
             view.loadUrl(forced)
             return true
         }
-        DebugLog.add("AUTH", "Login con state presente: $state")
         return false
     }
 
@@ -54,36 +52,20 @@ class PortalWebViewClient(
     }
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
-        DebugLog.add("PAGE", "start ${url?.substringBefore('?')}")
         ensureState(view, url)
         viewModel.onPageStarted()
     }
 
     override fun onPageFinished(view: WebView, url: String?) {
-        DebugLog.add("PAGE", "finish ${url?.substringBefore('?')}")
-
         try {
             view.addJavascriptInterface(PortalJsBridge(viewModel, context), "HRCBridge")
-            DebugLog.add("UI_MAP", "Puente HRCBridge re-registrado en onPageFinished")
-        } catch (e: Exception) {
-            DebugLog.add("UI_MAP", "Error al re-registrar puente: ${e.message}")
-        }
+        } catch (_: Exception) {}
 
-        if (url?.startsWith(PortalRoutes.BASE) == true) {
-            DebugLog.add("THEME", "Tema visual desactivado; se usa el estilo original del portal")
-            if (uiMapScript.isNotBlank()) {
-                DebugLog.add("UI_MAP", "Inyectando mapa UI; script=${uiMapScript.length} caracteres")
-                view.evaluateJavascript(uiMapScript) { result ->
-                    DebugLog.add("UI_MAP", "evaluateJavascript finalizó; resultado=${result ?: "null"}")
-                }
-            }
-        }
-
+        // Logs y mapa UI desactivados
         viewModel.onPageFinished(url)
     }
 
     override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
-        DebugLog.add("NAV", "history ${url?.substringBefore('?')}")
         ensureState(view, url)
         viewModel.onPageFinished(url)
     }
@@ -93,14 +75,11 @@ class PortalWebViewClient(
         request: WebResourceRequest,
         error: WebResourceError
     ) {
-        DebugLog.add("ERR", "${if (request.isForMainFrame) "MAIN " else ""}${request.url} -> ${error.errorCode} ${error.description}")
         if (request.isForMainFrame) viewModel.onError(error.description?.toString().orEmpty())
     }
 
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
-        DebugLog.add("SSL", "${error.primaryError} ${error.url}")
         val host = error.url?.let { Uri.parse(it).host } ?: view.url?.let { Uri.parse(it).host }
-        FileLogger.log(context, "SSL", "Error ${error.primaryError} en host=$host url=${error.url}")
         if (host == null || host == PortalRoutes.HOST || host.endsWith(".sanluis.gob.ar")) {
             handler.proceed()
         } else {
@@ -110,7 +89,6 @@ class PortalWebViewClient(
     }
 
     override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-        DebugLog.add("RENDER", "render process gone, crash=${detail.didCrash()}")
         viewModel.onError("La vista del portal se reinició. Tocá Reintentar.")
         return true
     }
