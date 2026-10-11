@@ -1,4 +1,4 @@
-/* HRC enhancer v4: marca superficies por su aspecto original y mantiene la SPA observada. */
+/* HRC enhancer v5: aplica el tema también en la pantalla de login. */
 (function () {
   'use strict';
   if (window.__hrcEnhancerLoaded) return;
@@ -23,8 +23,10 @@
     var p = m[1].split(/[ ,/]+/).filter(Boolean).slice(0, 3).map(Number);
     return p.length === 3 ? Math.max.apply(null, p) - Math.min.apply(null, p) : 0;
   }
+
   function hideHeader() {
-    if (isLogin() || keepHeader()) {
+    // En login también ocultamos el header oficial para que se vea limpio
+    if (keepHeader()) {
       document.querySelectorAll('[data-hrc-hidden="1"]').forEach(function (e) { e.removeAttribute('data-hrc-hidden'); });
       return;
     }
@@ -104,6 +106,20 @@
     });
   }
 
+  function styleLogin() {
+    if (!isLogin()) return;
+    document.documentElement.setAttribute('data-hrc-route', 'login');
+    // Forzar que el formulario de login se vea como card
+    var forms = document.querySelectorAll('form');
+    forms.forEach(function (f) {
+      if (!f.getAttribute('data-hrc')) f.setAttribute('data-hrc', 'card');
+    });
+    var buttons = document.querySelectorAll('button[type="submit"], button');
+    buttons.forEach(function (b) {
+      if (!b.getAttribute('data-hrc')) b.setAttribute('data-hrc', 'btn-primary');
+    });
+  }
+
   function run() {
     scheduled = false;
     try {
@@ -111,6 +127,7 @@
       document.documentElement.setAttribute('data-hrc-route', isLogin() ? 'login' : 'app');
       if (headerPasses++ < 80) hideHeader();
       classify();
+      styleLogin();
     } catch (e) { log('error: ' + e); }
   }
   function schedule() {
@@ -123,6 +140,6 @@
     new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'role'] });
     setInterval(run, 1800);
   }
-  log('enhancer loaded');
+  log('enhancer v5 loaded');
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true }); else start();
 })();
