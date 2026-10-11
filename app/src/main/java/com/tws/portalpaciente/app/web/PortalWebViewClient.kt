@@ -17,7 +17,9 @@ import com.tws.portalpaciente.app.util.FileLogger
 class PortalWebViewClient(
     private val context: Context,
     private val viewModel: PortalViewModel,
-    private val uiMapScript: String
+    private val uiMapScript: String,
+    private val themeCss: String,
+    private val enhancerJs: String
 ) : WebViewClient() {
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -47,7 +49,6 @@ class PortalWebViewClient(
     override fun onPageFinished(view: WebView, url: String?) {
         DebugLog.add("PAGE", "finish ${url?.substringBefore('?')}")
 
-        // Re-registrar el puente por si la navegación lo perdió
         try {
             view.addJavascriptInterface(PortalJsBridge(viewModel, context), "HRCBridge")
             DebugLog.add("UI_MAP", "Puente HRCBridge re-registrado en onPageFinished")
@@ -55,17 +56,51 @@ class PortalWebViewClient(
             DebugLog.add("UI_MAP", "Error al re-registrar puente: ${e.message}")
         }
 
-        if (uiMapScript.isBlank()) {
-            DebugLog.add("UI_MAP", "No se cargó assets/js/ui-map.js: el script está vacío")
-        } else if (url?.startsWith(PortalRoutes.BASE) == true) {
-            DebugLog.add("UI_MAP", "Inyectando mapa UI en la página del portal; script=${uiMapScript.length} caracteres")
-            view.evaluateJavascript(uiMapScript) { result ->
-                DebugLog.add("UI_MAP", "evaluateJavascript finalizó; resultado=${result ?: "null"}")
+        if (url?.startsWith(PortalRoutes.BASE) == true) {
+            // Inyectar tema visual
+            if (themeCss.isNotBlank()) {
+                val cssJs = """
+                    (function(){
+                      var s = document.getElementById('hrc-theme');
+                      if(!s){
+                        s = document.createElement('style');
+                        s.id = 'hrc-theme';
+                        document.head.appendChild(s);
+                      }
+                      s.textContent = ${jsonString(themeCss)};
+                      console.log('[THEME] CSS inyectado');
+                    })();
+                """.trimIndent()
+                view.evaluateJavascript(cssJs) { }
+                DebugLog.add("THEME", "CSS del tema inyectado (${themeCss.length} chars)")
             }
-        } else {
-            DebugLog.add("UI_MAP", "Se omite mapa UI para URL fuera del portal")
+
+            // Inyectar enhancer
+            if (enhancerJs.isNotBlank()) {
+                view.evaluateJavascript(enhancerJs) { }
+                DebugLog.add("THEME", "Enhancer inyectado (${enhancerJs.length} chars)")
+            }
+
+            // Inyectar mapa UI
+            if (uiMapScript.isNotBlank()) {
+                DebugLog.add("UI_MAP", "Inyectando mapa UI; script=${uiMapScript.length} caracteres")
+                view.evaluateJavascript(uiMapScript) { result ->
+                    DebugLog.add("UI_MAP", "evaluateJavascript finalizó; resultado=${result ?: "null"}")
+                }
+            }
         }
+
         viewModel.onPageFinished(url)
+    }
+
+    private fun jsonString(value: String): String {
+        val escaped = value
+            .replace("\\", "\\\\")
+            .replace("'", "\\'")
+            .replace("\n", "\\n")
+            .replace("\r", "")
+            .replace("</", "<\\/")
+        return "'$escaped'"
     }
 
     override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
