@@ -1,6 +1,8 @@
 package com.tws.portalpaciente.app
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -47,24 +49,28 @@ class MainActivity : AppCompatActivity() {
                 WebSettingsCompat.setForceDark(this, WebSettingsCompat.FORCE_DARK_OFF)
             }
         }
-        web.webViewClient = UiWebViewClient { Toast.makeText(this, "La vista se reinició", Toast.LENGTH_SHORT).show() }
+        web.webViewClient = UiWebViewClient {
+            Toast.makeText(this, "La vista se reinició", Toast.LENGTH_SHORT).show()
+        }
         web.addJavascriptInterface(UiBridge(this), "HRCNative")
     }
 
     fun startLogin(dni: String, password: String) {
-        // Por ahora abre el login del portal con state=
         val url = session.loginUrl()
-        // TODO: lanzar AuthActivity o WebView de login
-        Toast.makeText(this, "Login con state: ${url.substringAfter("state=")}", Toast.LENGTH_LONG).show()
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "No se pudo abrir el login: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     fun fetchData(kind: String) {
-        // TODO: llamar a PortalApi y emitir resultado a la UI
-        Toast.makeText(this, "Fetch $kind (endpoints vacíos)", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Datos de $kind (endpoints pendientes)", Toast.LENGTH_SHORT).show()
     }
 
     fun openExam(id: String) {
-        Toast.makeText(this, "Abrir estudio $id", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Estudio $id", Toast.LENGTH_SHORT).show()
     }
 
     fun logout() {
