@@ -63,7 +63,8 @@ class MainActivity : AppCompatActivity() {
         })
         if (savedInstanceState == null) {
             val loginUrl = PortalRoutes.newLoginUrl()
-            DebugLog.add("AUTH", "Abriendo login con state: ${loginUrl.contains("state=")}")
+            DebugLog.add("AUTH", "URL de login generada: $loginUrl")
+            DebugLog.add("AUTH", "Contiene state=: ${loginUrl.contains("state=")}")
             binding.webView.loadUrl(loginUrl)
         }
     }
