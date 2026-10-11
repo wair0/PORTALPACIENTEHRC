@@ -21,6 +21,10 @@ body{color:var(--ink);font-family:Roboto,system-ui,"Segoe UI",sans-serif;-webkit
 .top small{display:block;color:var(--muted);font-size:11.5px}
 .mark{width:34px;height:34px;flex:none}
 .grow{flex:1;min-width:0}
+.bell,.menu-btn{position:relative;width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line);background:var(--chipa);color:var(--blue);cursor:pointer;transition:transform .12s}
+.bell:active,.menu-btn:active{transform:scale(.94)}
+.bell svg,.menu-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#D64545;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;border:2px solid var(--bg)}
 .banner{margin:10px 16px 0;padding:10px 12px;border-radius:12px;font-size:13px;background:var(--chipa);border:1px solid var(--line);color:var(--ink)}
 .banner.warn{background:rgba(220,150,20,.14);border-color:rgba(220,150,20,.5)}
 .screen{flex:1;overflow-y:auto;padding:16px;display:none;-webkit-overflow-scrolling:touch}
