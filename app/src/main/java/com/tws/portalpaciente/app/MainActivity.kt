@@ -2,12 +2,13 @@ package com.tws.portalpaciente.app
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
+import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
@@ -21,21 +22,27 @@ class MainActivity : AppCompatActivity() {
         private set
     private lateinit var web: WebView
 
+    private val authLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            session.loggedIn = true
+            web.evaluateJavascript("if(window.HRC&&HRC.receive)HRC.receive('auth','{\"ok\":true}');", null)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         session = SessionManager(this)
-
+        CookieManager.getInstance().setAcceptCookie(true)
         web = WebView(this)
         setContentView(web)
-
         setupWebView()
-
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (web.canGoBack()) web.goBack() else finish()
             }
         })
-
         web.loadUrl("file:///android_asset/index.html")
     }
 
@@ -45,6 +52,7 @@ class MainActivity : AppCompatActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
+            allowFileAccess = true
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
                 WebSettingsCompat.setForceDark(this, WebSettingsCompat.FORCE_DARK_OFF)
             }
@@ -56,13 +64,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun startLogin(dni: String, password: String) {
-        val url = session.loginUrl()
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        try {
-            startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(this, "No se pudo abrir el login: ${e.message}", Toast.LENGTH_LONG).show()
-        }
+        authLauncher.launch(Intent(this, AuthActivity::class.java))
     }
 
     fun fetchData(kind: String) {
